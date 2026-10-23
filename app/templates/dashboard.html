@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — Dashboard{% endblock %}
+
+{% block content %}
+<section class="dashboard-hero">
+  <span class="eyebrow">SOLAR INTELLIGENCE / OVERVIEW</span>
+  {% if current_user %}
+  <h1>Welcome back, {{ current_user.name.split()[0] }}.</h1>
+  <p class="tagline">Your solar assessments, savings signals and saved reports at a glance.</p>
+  {% else %}
+  <h1>Solar dashboard</h1>
+  <p class="tagline">Your recent rooftop assessments, savings signals and reports at a glance.</p>
+  {% endif %}
+</section>
+
+{% if locations %}
+<section class="dashboard-summary" aria-label="Estimate summary">
+  <div class="summary-item">
+    <span class="summary-label">Estimates run</span>
+    <strong class="summary-value">{{ locations|length }}</strong>
+  </div>
+  <div class="summary-item">
+    <span class="summary-label">Total system size</span>
+    <strong class="summary-value">{{ '{:,.1f}'.format(locations|sum(attribute='system_size')) }} kW</strong>
+  </div>
+</section>
+{% endif %}
+
+<div class="dashboard-start-row">
+  <div><strong>Your saved solar journey</strong><span>Start a new analysis whenever you are ready.</span></div>
+  <a class="btn-primary" href="{{ url_for('routes.index') }}">Start new analysis <span aria-hidden="true">→</span></a>
+</div>
+
+<section>
+  <h2 class="section-title">Recent Reports</h2>
+  {% if locations %}
+  <div class="reports-grid">
+    {% for loc in locations %}
+    <article class="report-card">
+      <div class="report-card-topline">
+        <span class="report-card-kicker">Saved estimate</span>
+        <span class="report-card-size">{{ loc.system_size }} kW</span>
+      </div>
+      <h3>{{ loc.address[:72] }}{% if loc.address|length > 72 %}…{% endif %}</h3>
+      <div class="report-card-stats">
+        <div>
+          <span>Annual generation</span>
+          <strong>{{ '{:,.0f}'.format(loc.annual_generation or 0) }} kWh</strong>
+        </div>
+        <div>
+          <span>Monthly savings</span>
+          <strong>₹{{ '{:,.0f}'.format(loc.monthly_savings or 0) }}</strong>
+        </div>
+      </div>
+      <a class="report-card-link" href="{{ url_for('routes.report', location_id=loc.id) }}">View Report <span aria-hidden="true">→</span></a>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-state-icon" aria-hidden="true">☀</span>
+    <h3>No saved estimates yet</h3>
+    <p>Map a rooftop to create your first solar report.</p>
+    <a class="btn-grad" href="{{ url_for('routes.index') }}">Start Estimation <span aria-hidden="true">→</span></a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

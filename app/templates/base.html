@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Solar Setu — Bridging You to Clean Energy{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20260910-3') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  {% block head %}{% endblock %}
+</head>
+<body class="ignix-body">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <button type="button" class="sidebar-close" id="sidebar-close" aria-label="Close navigation">×</button>
+      <a href="{{ url_for('routes.index') }}" class="logo-block">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" width="40" height="40">
+            <defs>
+              <linearGradient id="sunGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FF7A45"/>
+                <stop offset="50%" stop-color="#FFB347"/>
+                <stop offset="100%" stop-color="#C24FA8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="20" cy="20" r="8" fill="url(#sunGrad)"/>
+            <g stroke="url(#sunGrad)" stroke-width="2.2" stroke-linecap="round">
+              <line x1="20" y1="4" x2="20" y2="8"/><line x1="20" y1="32" x2="20" y2="36"/>
+              <line x1="4" y1="20" x2="8" y2="20"/><line x1="32" y1="20" x2="36" y2="20"/>
+              <line x1="8.5" y1="8.5" x2="11.5" y2="11.5"/><line x1="28.5" y1="28.5" x2="31.5" y2="31.5"/>
+              <line x1="31.5" y1="8.5" x2="28.5" y2="11.5"/><line x1="11.5" y1="28.5" x2="8.5" y2="31.5"/>
+            </g>
+          </svg>
+        </span>
+        <span class="logo-text">
+          <span class="logo-name">Solar Setu</span>
+          <span class="logo-tagline">Bridging You to Clean Energy</span>
+        </span>
+      </a>
+
+      <nav class="side-nav">
+        <a href="{{ url_for('routes.dashboard') }}" class="nav-item {% if request.endpoint == 'routes.dashboard' %}active{% endif %}">
+          <span class="nav-ico">▦</span> Dashboard
+        </a>
+        <a href="{{ url_for('routes.index') }}" class="nav-item {% if request.endpoint == 'routes.index' %}active{% endif %}">
+          <span class="nav-ico">☀</span> Estimates
+        </a>
+        <a href="{{ url_for('routes.dashboard') }}" class="nav-item">
+          <span class="nav-ico">📄</span> Reports
+        </a>
+        <a href="{{ url_for('routes.dashboard') }}" class="nav-item">
+          <span class="nav-ico">📍</span> Saved Locations
+        </a>
+        <a href="{{ url_for('routes.compare') }}" class="nav-item {% if request.endpoint == 'routes.compare' %}active{% endif %}">
+          <span class="nav-ico">⇄</span> Compare
+        </a>
+        {% if current_user %}<a href="{{ url_for('routes.saved_comparisons') }}" class="nav-item {% if request.endpoint == 'routes.saved_comparisons' %}active{% endif %}">
+          <span class="nav-ico">☆</span> Saved Comparisons
+        </a>{% endif %}
+        <a href="{{ url_for('routes.savings') }}" class="nav-item {% if request.endpoint == 'routes.savings' %}active{% endif %}">
+          <span class="nav-ico">₹</span> Savings
+        </a>
+        {% if current_user %}
+        <a href="{{ url_for('routes.profile') }}" class="nav-item {% if request.endpoint == 'routes.profile' %}active{% endif %}">
+          <span class="nav-ico">👤</span> Profile
+        </a>
+        {% else %}
+        <a href="{{ url_for('routes.login', next=url_for('routes.profile')) }}" class="nav-item">
+          <span class="nav-ico">👤</span> Profile
+        </a>
+        {% endif %}
+        <a href="{{ url_for('routes.settings') }}" class="nav-item {% if request.endpoint == 'routes.settings' %}active{% endif %}">
+          <span class="nav-ico">⚙</span> Settings
+        </a>
+      </nav>
+
+      <div class="sidebar-goal-card">
+        <span class="goal-eyebrow">SOLAR SETU</span>
+        <h4>Make your rooftop work for you.</h4>
+        <p>Clean energy starts with one analysis.</p>
+        <span class="goal-icon" aria-hidden="true">↗</span>
+      </div>
+    </aside>
+    <div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+    <div class="main-column">
+      <header class="top-bar">
+        <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle menu">☰</button>
+        <div class="top-bar-right">
+          <button type="button" class="icon-btn" title="Notifications" aria-label="Notifications">🔔</button>
+          {% if current_user %}
+          <div class="user-chip"><span class="avatar">{{ current_user.name[:1]|upper }}</span><span class="user-name">{{ current_user.name.split()[0] }}</span></div>
+          <form method="post" action="{{ url_for('routes.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="top-auth-link" type="submit">Logout</button></form>
+          {% else %}
+          <a class="top-auth-link" href="{{ url_for('routes.login', next=request.path) }}">Login</a>
+          <a class="top-auth-cta" href="{{ url_for('routes.signup', next=request.path) }}">Create account</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <main class="page-content">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="site-footer">
+        <p>Solar Setu · Indicative estimates only · Verify DISCOM / MNRE rules before procurement</p>
+      </footer>
+    </div>
+  </div>
+
+  <button class="surya-launcher" id="surya-launcher" type="button" aria-label="Ask Surya" aria-controls="surya-panel" aria-expanded="false">
+    <span class="surya-launcher-icon" aria-hidden="true">✦</span>
+    <span class="surya-launcher-label">Ask Surya</span>
+    <span class="surya-ai-badge">AI</span>
+  </button>
+
+  <aside class="surya-panel" id="surya-panel" aria-label="Surya solar assistant" aria-hidden="true">
+    <header class="surya-header">
+      <div class="surya-avatar" aria-hidden="true">☼</div>
+      <div class="surya-header-copy">
+        <strong>Surya</strong>
+        <span><i></i> Your Solar Assistant</span>
+      </div>
+      <button class="surya-icon-button" id="surya-minimize" type="button" aria-label="Minimize Surya">−</button>
+      <button class="surya-icon-button" id="surya-close" type="button" aria-label="Close Surya">×</button>
+    </header>
+    <div class="surya-context-note" id="surya-context-note">Ask me about rooftop solar, savings or your analysis.</div>
+    <div class="surya-messages" id="surya-messages" aria-live="polite"></div>
+    <div class="surya-composer">
+      <div class="surya-quick-actions" id="surya-quick-actions">
+        <button type="button" data-surya-quick="Explain my results">Explain my results</button>
+        <button type="button" data-surya-quick="Why this system size?">Why this system size?</button>
+        <button type="button" data-surya-quick="Explain payback">Explain payback</button>
+        <button type="button" data-surya-quick="Battery vs no battery">Battery vs no battery</button>
+      </div>
+      <form class="surya-form" id="surya-form">
+        <label class="sr-only" for="surya-input">Ask Surya a question</label>
+        <input id="surya-input" name="message" maxlength="1200" autocomplete="off" placeholder="Ask about your solar results...">
+        <button type="submit" aria-label="Send question">↑</button>
+      </form>
+      <button class="surya-clear" id="surya-clear" type="button">Clear chat</button>
+    </div>
+  </aside>
+
+  {% block scripts %}{% endblock %}
+  <script>window.SURYA_API_URL = "{{ url_for('routes.api_solar_assistant') }}"; window.SOLAR_CONTEXT = window.SOLAR_CONTEXT || {};</script>
+  <script src="{{ url_for('static', filename='js/surya.js', v='20260910-2') }}"></script>
+  <script>
+    const appShell = document.querySelector('.app-shell');
+    const setSidebarOpen = (open) => appShell?.classList.toggle('sidebar-open', open);
+    document.getElementById('sidebar-toggle')?.addEventListener('click', () => setSidebarOpen(true));
+    document.getElementById('sidebar-close')?.addEventListener('click', () => setSidebarOpen(false));
+    document.getElementById('sidebar-scrim')?.addEventListener('click', () => setSidebarOpen(false));
+  </script>
+</body>
+</html>

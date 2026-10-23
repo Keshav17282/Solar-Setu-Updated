@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — Savings{% endblock %}
+
+{% macro money(value, suffix='') -%}
+  {% if value is not none %}₹{{ '{:,.0f}'.format(value) }}{{ suffix }}{% else %}Not available{% endif %}
+{%- endmacro %}
+
+{% block content %}
+<section class="savings-page">
+  <div class="savings-page-heading">
+    <div><span class="eyebrow">SOLAR INTELLIGENCE / FINANCIAL VIEW</span><h1>Your solar savings</h1><p>Understand your investment, savings and long-term financial benefits from solar.</p></div>
+    <a class="btn-primary" href="{{ url_for('routes.index') }}">Start new analysis <span aria-hidden="true">→</span></a>
+  </div>
+
+  {% if savings.report %}
+  <p class="savings-context">{% if is_guest %}Based on your current session assessment.{% else %}Based on your saved solar assessments.{% endif %}</p>
+  <div class="savings-selector">
+    <span>Assessment</span>
+    <select onchange="if(this.value) window.location=this.value">
+      {% for item in savings.reports %}<option value="{{ url_for('routes.savings', location_id=item.id) }}" {% if item.id == savings.report.id %}selected{% endif %}>{{ item.address[:60] }} — {{ item.system_size }} kW</option>{% endfor %}
+    </select>
+  </div>
+  <div class="savings-kpi-grid">
+    <div class="savings-kpi"><span>MONTHLY SAVINGS</span><strong>{{ money(savings.monthly) }}</strong><small>Estimated electricity cost reduction</small></div>
+    <div class="savings-kpi"><span>ANNUAL SAVINGS</span><strong>{{ money(savings.annual) }}</strong><small>Estimated savings per year</small></div>
+    <div class="savings-kpi"><span>PAYBACK PERIOD</span><strong>{{ '{:,.1f} years'.format(savings.payback) if savings.payback is not none else 'Not available' }}</strong><small>Estimated investment recovery</small></div>
+    <div class="savings-kpi"><span>25-YEAR SAVINGS</span><strong>{{ money(savings.long_term) }}</strong><small>Flat-tariff planning estimate</small></div>
+  </div>
+
+  <section class="savings-hero-card"><div><span>YOUR ROOFTOP COULD SAVE</span><strong>{{ money(savings.annual, ' / year') }}</strong><p>{% if savings.payback is not none %}With an estimated payback period of {{ '{:,.1f}'.format(savings.payback) }} years.{% else %}Payback data is not available for this assessment.{% endif %}</p><small>After your investment is recovered, your system can continue reducing grid dependence.</small></div><div class="savings-sun" aria-hidden="true">☼</div></section>
+
+  <div class="savings-columns">
+    <section class="savings-panel"><span class="eyebrow">INVESTMENT BREAKDOWN</span><h2>Where the value comes from</h2>
+      <div class="finance-row"><span>System cost</span><strong>{{ money(savings.report.system_cost) }}</strong></div>
+      <div class="finance-row"><span>Saved subsidy estimate (unverified)</span><strong>{{ money(savings.report.subsidy_amount) }}</strong></div>
+      <div class="finance-row total"><span>Net investment</span><strong>{{ money(savings.report.net_investment) }}</strong></div>
+      <div class="finance-row"><span>Annual savings</span><strong>{{ money(savings.annual) }}</strong></div>
+    </section>
+    <section class="savings-panel"><span class="eyebrow">PAYBACK PATH</span><h2>When does your investment pay back?</h2>
+      {% if savings.payback is not none %}<div class="payback-track"><span class="payback-fill" style="width:{{ [((savings.payback / 25) * 100), 100]|min }}%"></span><i class="payback-dot" style="left:{{ [((savings.payback / 25) * 100), 100]|min }}%"></i></div><div class="payback-labels"><span>Investment</span><strong>Year {{ '{:,.1f}'.format(savings.payback) }}</strong><span>Year 25</span></div>{% else %}<p class="not-available">Payback visualization is not available for this assessment.</p>{% endif %}
+    </section>
+  </div>
+
+  <section class="savings-panel savings-calculator" id="subsidy-calculator"
+    data-gross-cost="{{ savings.calculator.gross_cost if savings.calculator.gross_cost is not none else '' }}"
+    data-annual-savings="{{ savings.calculator.annual_savings if savings.calculator.annual_savings is not none else '' }}">
+    <span class="eyebrow">ESTIMATE / EDIT ASSUMPTIONS</span>
+    <h2>Subsidy and simple payback calculator</h2>
+    <p class="calculator-note">The subsidy amount is an unverified planning assumption from this saved estimate, not confirmation of eligibility. Edit it or enter zero. Annual savings reuse the existing estimate and are not an additional benefit.</p>
+    <div class="calculator-grid">
+      <div class="calculator-row"><span>Gross estimated system + battery cost</span><strong id="calculator-gross">{{ money(savings.calculator.gross_cost) }}</strong></div>
+      <label class="calculator-row calculator-input-row" for="subsidy-assumption">
+        <span>Subsidy assumption (₹) <small>Not verified</small></span>
+        <input id="subsidy-assumption" type="number" min="0" step="1000"
+          {% if savings.calculator.gross_cost is not none %}max="{{ savings.calculator.gross_cost }}"{% endif %}
+          value="{{ '{:.0f}'.format(savings.calculator.subsidy_assumption) }}">
+      </label>
+      <div class="calculator-row calculator-total"><span>Estimated net cost after assumption</span><strong id="calculator-net">{{ money(savings.calculator.net_cost) }}</strong></div>
+      <div class="calculator-row"><span>Estimated annual electricity-bill savings</span><strong id="calculator-annual-savings">{{ money(savings.calculator.annual_savings) }}</strong></div>
+      <div class="calculator-row calculator-total"><span>Simple estimated payback</span><strong id="calculator-payback">{{ '{:,.1f} years'.format(savings.calculator.payback_years) if savings.calculator.payback_years is not none else 'Not available' }}</strong></div>
+    </div>
+    <p class="calculator-footnote">Formula: (gross cost − editable subsidy assumption) ÷ estimated annual bill savings. Not available unless net cost and annual savings are both positive. This simple estimate excludes financing, O&amp;M, tariff changes, and generation variation; actual subsidy eligibility and amount must be confirmed with the official program and DISCOM.</p>
+    <p class="calculator-error" id="calculator-error" role="status" hidden></p>
+  </section>
+
+  <section class="savings-impact"><div><span class="eyebrow">MORE THAN SAVINGS</span><h2>Financial value with environmental impact.</h2><p>Your current assessment connects clean energy generation with measurable emissions reduction.</p></div><div class="impact-values"><div><span>Estimated annual CO₂ avoided</span><strong>{{ savings.co2_reduction_tons if savings.co2_reduction_tons is not none else 'Not available' }} tCO₂/year</strong></div><div><span>Solar generation</span><strong>{{ '{:,.0f}'.format(savings.annual_generation) if savings.annual_generation is not none else 'Not available' }} kWh/year</strong></div></div></section>
+
+  <section class="surya-savings-card"><div><span class="surya-savings-icon">☼</span><div><span class="eyebrow">SURYA'S SAVINGS INSIGHT</span><h2>Want a simpler explanation?</h2><p>Ask Surya to explain this assessment's savings and payback using its actual values.</p></div></div><button class="btn-primary" type="button" data-surya-action="savings">Ask Surya about my savings <span aria-hidden="true">→</span></button></section>
+
+  <section class="assessment-list"><h2>Your assessments</h2>{% for item in savings.reports %}<article><div><strong>{{ item.address[:70] }}</strong><span>{{ item.created_at.strftime('%d %b %Y') if item.created_at else 'Saved assessment' }} · {{ item.system_size }} kW</span></div><div><strong>{{ money(item.monthly_savings * 12 if item.monthly_savings is not none else none) }}</strong><a href="{{ url_for('routes.savings', location_id=item.id) }}">View savings →</a></div></article>{% endfor %}</section>
+  {% else %}
+  <section class="savings-empty"><span class="savings-empty-icon">☼</span><h2>Your savings dashboard is waiting.</h2><p>Analyze a rooftop to discover its solar potential and estimated savings.</p><a class="btn-primary" href="{{ url_for('routes.index') }}">Start rooftop analysis <span aria-hidden="true">→</span></a></section>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>window.SOLAR_CONTEXT = {{ ({'location': savings.report.address, 'systemSize': savings.report.system_size, 'annualGeneration': savings.annual_generation, 'monthlySavings': savings.report.monthly_savings, 'annualSavings': savings.annual, 'paybackPeriod': savings.payback, 'co2ReductionTons': savings.co2_reduction_tons} if savings.report else {}) | tojson }};</script>
+{% if savings.report %}
+<script>
+(() => {
+  const panel = document.getElementById('subsidy-calculator');
+  const input = document.getElementById('subsidy-assumption');
+  if (!panel || !input) return;
+  const grossRaw = panel.dataset.grossCost;
+  const gross = Number(grossRaw);
+  const annualSavings = Number(panel.dataset.annualSavings);
+  const netOutput = document.getElementById('calculator-net');
+  const paybackOutput = document.getElementById('calculator-payback');
+  const error = document.getElementById('calculator-error');
+  const money = value => `₹${new Intl.NumberFormat('en-IN', {maximumFractionDigits: 0}).format(value)}`;
+
+  input.addEventListener('input', () => {
+    const raw = input.value.trim();
+    const subsidy = Number(raw);
+    const validGross = grossRaw !== '' && Number.isFinite(gross) && gross >= 0;
+    const validSubsidy = raw !== '' && Number.isFinite(subsidy) && subsidy >= 0 && subsidy <= gross;
+    error.hidden = validSubsidy || !validGross;
+    error.textContent = validGross && !validSubsidy
+      ? `Enter a subsidy assumption between ₹0 and ${money(gross)}.`
+      : '';
+    if (!validGross || !validSubsidy) {
+      netOutput.textContent = 'Not available';
+      paybackOutput.textContent = 'Not available';
+      return;
+    }
+    const net = gross - subsidy;
+    netOutput.textContent = money(net);
+    paybackOutput.textContent = net > 0 && Number.isFinite(annualSavings) && annualSavings > 0
+      ? `${(net / annualSavings).toFixed(1)} years`
+      : 'Not available';
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

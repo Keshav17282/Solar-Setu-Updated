@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — {{ 'Create account' if mode == 'signup' else 'Login' }}{% endblock %}
+
+{% block content %}
+<section class="auth-layout">
+  <div class="auth-intro">
+    <span class="eyebrow">SOLAR SETU / YOUR SOLAR JOURNEY</span>
+    <h1>{{ 'Save your solar journey.' if mode == 'signup' else 'Welcome back to your solar journey.' }}</h1>
+    <p>{{ 'Create a free account to save assessments and access them anytime. You can always keep using Solar Setu without an account.' if mode == 'signup' else 'Access your saved solar assessments while keeping the complete estimator available to everyone.' }}</p>
+    <div class="auth-value-list">
+      <span>✓ Save your solar assessments</span>
+      <span>✓ Access reports from any device</span>
+      <span>✓ Keep your analysis history together</span>
+    </div>
+  </div>
+  <div class="auth-card">
+    <span class="auth-card-mark">☼</span>
+    <h2>{{ 'Create your Solar Setu account' if mode == 'signup' else 'Welcome back' }}</h2>
+    <p class="auth-subtitle">{{ 'Save your solar assessments and access them anytime.' if mode == 'signup' else 'Access your saved solar assessments.' }}</p>
+    {% if error %}<div class="auth-error" role="alert">{{ error }}</div>{% endif %}
+    <form method="post" class="auth-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
+      {% if mode == 'signup' %}
+      <label for="name">Full name</label>
+      <input id="name" name="name" autocomplete="name" required value="{{ request.form.get('name', '') }}">
+      {% endif %}
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required value="{{ request.form.get('email', '') }}">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="{{ 'new-password' if mode == 'signup' else 'current-password' }}" required>
+      {% if mode == 'signup' %}
+      <label for="confirm_password">Confirm password</label>
+      <input id="confirm_password" name="confirm_password" type="password" autocomplete="new-password" required>
+      {% endif %}
+      <button class="btn-primary auth-submit" type="submit">{{ 'Create free account' if mode == 'signup' else 'Login' }} <span aria-hidden="true">→</span></button>
+    </form>
+    <div class="auth-switch">
+      {% if mode == 'signup' %}
+      Already have an account? <a href="{{ url_for('routes.login', next=next_url) if next_url else url_for('routes.login') }}">Login</a>
+      {% else %}
+      Don’t have an account? <a href="{{ url_for('routes.signup', next=next_url) if next_url else url_for('routes.signup') }}">Create one</a>
+      {% endif %}
+    </div>
+    <a class="auth-continue" href="{{ url_for('routes.index') }}">Continue without an account</a>
+  </div>
+</section>
+{% endblock %}

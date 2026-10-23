@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — Compare Solar Solutions{% endblock %}
+{% block content %}
+<section class="compare-heading">
+  <div>
+    <span class="eyebrow">SOLAR INTELLIGENCE / DECISION SUPPORT</span>
+    <h1>Compare Solar Solutions</h1>
+    <p>Find solar solutions that match your rooftop, budget and energy requirements.</p>
+  </div>
+  {% if location %}<a class="btn btn-secondary" href="{{ url_for('routes.report', location_id=location.id) }}">Back to report</a>{% endif %}
+</section>
+
+{% if not location %}
+<section class="compare-empty">
+  <span aria-hidden="true">☀</span>
+  <h2>Complete your rooftop analysis first.</h2>
+  <p>Solar Setu uses your rooftop and energy requirements to find suitable solar solutions.</p>
+  <a class="btn-primary" href="{{ url_for('routes.index') }}">Start Rooftop Analysis <span aria-hidden="true">→</span></a>
+</section>
+{% else %}
+<section class="requirement-card">
+  <div><span class="compare-kicker">YOUR SOLAR REQUIREMENT</span><strong>{{ location.system_size }} kW</strong><small>Recommended System</small></div>
+  <div><span>Annual Generation</span><strong>{{ '{:,.0f}'.format(location.annual_generation or 0) }} kWh</strong></div>
+  <div><span>Annual Savings</span><strong>₹{{ '{:,.0f}'.format((location.monthly_savings or 0) * 12) }}</strong></div>
+  <div><span>Location</span><strong class="location-value">{{ location.address }}</strong></div>
+</section>
+
+<section class="compare-controls" aria-label="Comparison controls">
+  <div class="priority-control"><label for="priority">What matters most to you?</label><select id="priority">{% for key, label in priority_labels.items() %}<option value="{{ key }}" {% if key == priority %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="filter-control"><label for="size-filter">System size</label><select id="size-filter"><option value="all">All</option><option value="1-3">1–3 kW</option><option value="3-5">3–5 kW</option><option value="5-10">5–10 kW</option><option value="10">10+ kW</option></select></div>
+  <div class="filter-control"><label for="budget-filter">Budget</label><select id="budget-filter"><option value="all">All</option><option value="2">Under ₹2L</option><option value="4">₹2–4L</option><option value="6">₹4–6L</option><option value="7">₹6L+</option></select></div>
+  <div class="filter-control"><label for="technology-filter">Panel technology</label><select id="technology-filter"><option value="all">All</option>{% for technology in solutions|map(attribute='panel_type')|unique|sort %}<option value="{{ technology }}">{{ technology }}</option>{% endfor %}</select></div>
+  <div class="filter-control"><label for="sort-order">Sort by</label><select id="sort-order"><option value="recommended">Recommended</option><option value="price">Lowest Estimated Cost</option><option value="efficiency">Highest Efficiency</option><option value="warranty">Best Warranty</option><option value="match">Best Match</option></select></div>
+</section>
+
+<div class="compare-notice"><strong>Indicative pricing</strong><span>Payback uses the upper end of the listed price range, the saved subsidy estimate and your existing annual savings estimate. Subsidy eligibility is not verified. Confirm price, eligibility, equipment and availability with the provider.</span><button type="button" class="score-help" id="score-help">How is this score calculated?</button></div>
+<div class="score-explanation" id="score-explanation" hidden>Match scores are deterministic: system-size fit (35%), indicative price (18%), panel efficiency (15%), listed warranties (15%), selected priority (12%) and regional availability (5%). Payback uses the displayed indicative price and estimate savings. Annual savings and generation are shared rooftop estimates, so they cannot distinguish providers without plan-specific verified data. Scores are comparison aids, not endorsements.</div>
+
+<section class="compare-results">
+  <div class="results-heading"><div><span class="compare-kicker">RANKED RECOMMENDATIONS</span><h2>Listed comparison options</h2></div><span id="result-count"></span></div>
+  <div class="solution-grid" id="solution-grid">
+    {% for solution in solutions %}
+    <article class="solution-card" data-solution='{{ solution|tojson }}'>
+      <div class="solution-top"><span class="solution-provider">{{ solution.provider }}</span><span class="score-pill">#{{ solution.recommendation_rank }} · {{ solution.match_score }}/100</span></div>
+      <div class="badge-row">{% for badge in solution.badges %}<span class="compare-badge">{{ badge }}</span>{% endfor %}</div>
+      <h3>Solar Setu Match</h3>
+      <div class="solution-price"><span>ESTIMATED PRICE</span><strong>{% if solution.price_min is not none and solution.price_max is not none %}₹{{ '{:,.0f}'.format(solution.price_min) }} – ₹{{ '{:,.0f}'.format(solution.price_max) }}{% else %}Insufficient data{% endif %}</strong><small>{{ solution.data_status|title|replace('_', ' ') }} · Last updated {{ solution.last_updated }}</small></div>
+      <div class="solution-facts"><div><span>System Size</span><strong>{{ solution.system_size_kw if solution.system_size_kw is not none else 'Insufficient data' }}{% if solution.system_size_kw is not none %} kW{% endif %}</strong></div><div><span>Panel</span><strong>{{ solution.panel_type or 'Insufficient data' }}</strong></div><div><span>Efficiency</span><strong>{{ solution.panel_efficiency ~ '%' if solution.panel_efficiency is not none else 'Insufficient data' }}</strong></div><div><span>Annual Generation</span><strong>{{ '{:,.0f}'.format(solution.annual_generation) ~ ' kWh' if solution.annual_generation is not none else 'Insufficient data' }}</strong></div><div><span>Annual Savings</span><strong>{{ '₹' ~ '{:,.0f}'.format(solution.annual_savings) if solution.annual_savings is not none else 'Insufficient data' }}</strong></div><div><span>Payback</span><strong>{{ solution.payback_years ~ ' years' if solution.payback_years is not none else 'Not available' }}</strong></div><div><span>Panel Warranty</span><strong>{{ solution.panel_warranty_years ~ ' years' if solution.panel_warranty_years is not none else 'Insufficient data' }}</strong></div><div><span>Performance Warranty</span><strong>{{ solution.performance_warranty_years ~ ' years' if solution.performance_warranty_years is not none else 'Insufficient data' }}</strong></div><div><span>Inverter Warranty</span><strong>{{ solution.inverter_warranty_years ~ ' years' if solution.inverter_warranty_years is not none else 'Insufficient data' }}</strong></div><div><span>Availability</span><strong>{{ solution.availability }}</strong></div></div>
+      <div class="recommendation-detail"><strong>Why this rank</strong><ul>{% for reason in solution.recommendation_reasons %}<li>{{ reason }}</li>{% endfor %}</ul>{% if solution.insufficient_data %}<p class="recommendation-missing">{{ solution.insufficient_data }}</p>{% endif %}{% if solution.tradeoffs %}<strong>Trade-offs</strong><ul>{% for tradeoff in solution.tradeoffs %}<li>{{ tradeoff }}</li>{% endfor %}</ul>{% endif %}</div>
+      <div class="solution-flags"><span>{{ 'Installation included' if solution.installation_included else 'Installation to verify' }}</span><span>{{ 'EMI available' if solution.financing_available else 'Financing not listed' }}</span></div>
+      <div class="solution-actions"><label class="compare-check"><input type="checkbox" data-compare-id="{{ solution.id }}"> Compare</label><button type="button" class="btn-details" data-details-id="{{ solution.id }}">View Details</button></div>
+    </article>
+    {% endfor %}
+  </div>
+  <div class="no-matches" id="no-matches" hidden><h3>No matching solar solutions found.</h3><p>Try adjusting your filters or system size.</p><button type="button" class="btn-secondary" id="reset-filters">Reset Filters</button></div>
+</section>
+
+<section class="recommendation" id="recommendation"><span class="compare-kicker">TOP MATCH FOR YOUR SELECTED PRIORITY</span><strong id="recommendation-name">{{ solutions[0].provider if solutions else 'No match' }}</strong><p>Top-ranked by the displayed criteria using available catalogue data; this is not a universally best choice or provider endorsement. Verify quote, eligibility, equipment, and availability with the company.</p><div id="recommendation-reasons"></div></section>
+
+<div class="comparison-bar" id="comparison-bar" hidden><strong><span id="selected-count">0</span> solutions selected</strong><button type="button" class="btn-primary" id="compare-now">Compare Now <span aria-hidden="true">→</span></button><button type="button" class="btn-ghost" id="save-comparison">Save comparison</button></div>
+<section class="side-by-side" id="side-by-side" hidden><div class="results-heading"><div><span class="compare-kicker">DECISION VIEW</span><h2>Side-by-side comparison</h2></div></div><div class="comparison-scroll"><table id="comparison-table"></table></div></section>
+
+<section class="compare-surya"><div><strong>☀ Ask Surya Which One Should I Choose?</strong><span>Surya will explain trade-offs using this analysis and the selected solutions.</span></div><button type="button" class="surya-ask-link" id="ask-compare-surya">Ask Surya <span aria-hidden="true">→</span></button></section>
+<section class="data-info"><h2>Data Information</h2><p>Pricing and availability are indicative unless explicitly marked as verified. Each option includes its source and last updated date. Solar Setu does not imply provider partnership or endorsement.</p></section>
+<dialog class="solution-dialog" id="solution-dialog"><button type="button" class="dialog-close" id="dialog-close" aria-label="Close details">×</button><div id="solution-dialog-content"></div></dialog>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if location %}
+<script>
+window.COMPARE_SOLUTIONS = {{ solutions|tojson }};
+window.COMPARE_LOCATION = {{ location.to_dict()|tojson }};
+window.SOLAR_CONTEXT = {location: {{ location.address|tojson }}, systemSize: {{ location.system_size|tojson }}, roofArea: {{ location.roof_area_sqm|tojson }}, usableRoofArea: {{ location.usable_area_sqm|tojson }}, annualGeneration: {{ location.annual_generation|tojson }}, monthlySavings: {{ location.monthly_savings|tojson }}, annualSavings: {{ ((location.monthly_savings or 0) * 12)|tojson }}, paybackPeriod: {{ location.payback_years|tojson }}};
+</script>
+<script src="{{ url_for('static', filename='js/compare.js', v='20260914-1') }}"></script>
+{% endif %}
+{% endblock %}

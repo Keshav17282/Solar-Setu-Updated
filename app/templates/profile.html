@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — Profile{% endblock %}
+
+{% block content %}
+<section class="profile-page">
+  <div class="profile-heading">
+    <span class="eyebrow">SOLAR SETU / ACCOUNT</span>
+    <h1>Your profile</h1>
+    <p>Manage your Solar Setu account and saved solar journey.</p>
+  </div>
+
+  <section class="profile-card">
+    <div class="profile-avatar">{{ current_user.name[:1]|upper }}</div>
+    <div class="profile-identity">
+      <span class="profile-label">ACCOUNT HOLDER</span>
+      <h2>{{ current_user.name }}</h2>
+      <p>{{ current_user.email }}</p>
+    </div>
+    <span class="profile-status">Active account</span>
+  </section>
+
+  <div class="profile-details-grid">
+    <div class="profile-detail">
+      <span class="profile-label">Member since</span>
+      <strong>{{ current_user.created_at.strftime('%d %b %Y') }}</strong>
+    </div>
+    <div class="profile-detail">
+      <span class="profile-label">Saved reports</span>
+      <strong>{{ report_count }}</strong>
+    </div>
+  </div>
+
+  <div class="profile-actions">
+    <a class="btn-primary" href="{{ url_for('routes.dashboard') }}">View my reports <span aria-hidden="true">→</span></a>
+    <a class="btn-ghost" href="{{ url_for('routes.index') }}">Start new analysis</a>
+  </div>
+</section>
+{% endblock %}

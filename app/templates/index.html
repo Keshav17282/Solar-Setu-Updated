@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}Solar Setu — Estimates{% endblock %}
+
+{% block content %}
+<section class="hero-row">
+  <div class="hero-copy">
+    <span class="eyebrow"><span class="eyebrow-dot"></span> SOLAR INTELLIGENCE PLATFORM</span>
+    <h1>Turn your rooftop<br><span class="grad-text">into clean energy.</span></h1>
+    <p class="subtitle">Analyze your rooftop, estimate solar potential, calculate savings and understand your environmental impact in one guided journey.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#search-panel">Start Rooftop Analysis <span aria-hidden="true">→</span></a>
+      <a class="btn-ghost" href="#why-solar">Explore the platform <span aria-hidden="true">↓</span></a>
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="hero-sun">☼</div>
+    <div class="hero-roof">
+      <span class="panel panel-a"></span><span class="panel panel-b"></span><span class="panel panel-c"></span>
+      <span class="panel panel-d"></span><span class="panel panel-e"></span><span class="panel panel-f"></span>
+    </div>
+    <div class="hero-energy"><span>ENERGY</span><strong>+ savings</strong></div>
+    <div class="hero-art-line"></div>
+  </div>
+</section>
+
+<div class="trust-strip" aria-label="Solar Setu capabilities">
+  <span><b>01</b> Satellite mapping</span>
+  <span><b>02</b> Smart sizing</span>
+  <span><b>03</b> Financial clarity</span>
+  <span><b>04</b> Impact insights</span>
+</div>
+
+<section class="search-panel" id="search-panel">
+  <div class="section-heading-row">
+    <div>
+      <span class="eyebrow">STEP 01 / LOCATION</span>
+      <h2>Find your rooftop</h2>
+      <p>Search an address or drop a pin to begin your solar analysis.</p>
+    </div>
+    <span class="section-index">01</span>
+  </div>
+  <div class="search-box">
+    <span class="input-icon" aria-hidden="true">⌖</span>
+    <input type="text" id="address-search" placeholder="Search place, society, college, or full address">
+    <button id="search-btn" type="button">Find rooftop <span aria-hidden="true">→</span></button>
+    <button id="locate-btn" type="button" title="Use current location" aria-label="Use current location">⌖</button>
+  </div>
+  <div class="maps-link-box">
+    <span class="input-icon" aria-hidden="true">↗</span>
+    <input type="text" id="maps-link-input" placeholder="Or paste a Google Maps link (maps.app.goo.gl / maps.google.com)">
+    <button id="maps-link-btn" type="button">Use map link</button>
+  </div>
+  <div id="search-results" class="search-results"></div>
+</section>
+
+<section class="cta-banner">
+  <div>
+    <p class="cta-label">A clear path from rooftop to results</p>
+    <p class="cta-big">Measure. <span>Model.</span> Save.</p>
+    <a class="btn-grad" href="#map-section">Continue to rooftop analysis <span aria-hidden="true">→</span></a>
+  </div>
+  <div class="cta-metric" aria-hidden="true"><strong>4</strong><span>guided<br>steps</span></div>
+</section>
+
+<section id="why-solar">
+  <h2 class="section-title">Why Go Solar?</h2>
+  <p class="section-lead">The signals that make a rooftop decision easier.</p>
+  <div class="why-grid">
+    <div class="why-card">
+      <span class="icon-chip purple">₹</span>
+      <div>
+        <span class="value">Save up to 90%</span>
+        <span class="label">on electricity bills</span>
+      </div>
+    </div>
+    <div class="why-card">
+      <span class="icon-chip orange">⏱</span>
+      <div>
+        <span class="value orange">3–4 Years</span>
+        <span class="label">Payback on investment</span>
+      </div>
+    </div>
+    <div class="why-card">
+      <span class="icon-chip purple">🏛</span>
+      <div>
+        <span class="value">₹30,000 – ₹78,000</span>
+        <span class="label">PM Surya Ghar subsidy</span>
+      </div>
+    </div>
+    <div class="why-card">
+      <span class="icon-chip green">🌿</span>
+      <div>
+        <span class="value green">{% if grid_emission_factor_tco2_per_mwh is not none %}{{ '{:.4f}'.format(grid_emission_factor_tco2_per_mwh) }} tCO₂/MWh{% else %}Not available{% endif %}</span>
+        <span class="label">Illustrative CEA grid-average factor</span>
+      </div>
+    </div>
+    {% if estimated_annual_co2_avoided_tonnes is defined and estimated_annual_co2_avoided_tonnes is not none %}
+    <div class="why-card">
+      <span class="icon-chip green">🌿</span>
+      <div>
+        <span class="value green">{{ '{:,.2f}'.format(estimated_annual_co2_avoided_tonnes) }} tCO₂/year</span>
+        <span class="label">Estimated annual CO₂ avoided</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<div class="step-indicator" aria-label="Solar analysis steps">
+  <div class="step-item current"><span class="step-dot">01</span><span>Location</span></div>
+  <div class="step-line"></div>
+  <div class="step-item"><span class="step-dot">02</span><span>Rooftop analysis</span></div>
+  <div class="step-line"></div>
+  <div class="step-item"><span class="step-dot">03</span><span>Configuration</span></div>
+  <div class="step-line"></div>
+  <div class="step-item"><span class="step-dot">04</span><span>Results</span></div>
+</div>
+
+<section class="map-section" id="map-section">
+  <div class="section-heading-row map-heading">
+    <div>
+      <span class="eyebrow">STEP 02 / ROOFTOP ANALYSIS</span>
+      <h2>Outline the opportunity</h2>
+      <p>Trace your roof, mark areas that cannot hold panels, and let Solar Setu calculate the usable area.</p>
+    </div>
+    <span class="analysis-status"><span></span> Satellite analysis</span>
+  </div>
+
+  <div class="draw-mode-toolbar">
+    <button id="mode-roof-btn" type="button" class="mode-btn active">🏠 Rooftop Boundary</button>
+    <button id="mode-obstruction-btn" type="button" class="mode-btn">🚫 Mark Obstruction</button>
+    <button id="draw-btn" type="button" class="draw-btn">✏️ Draw</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="map-toolbar">
+    <div class="map-stats" aria-label="Rooftop analysis metrics">
+      <div class="map-stat"><span>Roof area</span><strong id="roof-area-value">--</strong><small>m²</small></div>
+      <div class="map-stat"><span>Obstructed</span><strong id="obstructed-area-value">--</strong><small>m²</small></div>
+      <div class="map-stat map-stat-active"><span>Usable area</span><strong id="usable-area-value">--</strong><small>m²</small></div>
+      <div class="map-stat map-stat-energy"><span>Estimated system</span><strong id="system-size-value">--</strong><small>kW</small></div>
+    </div>
+    <span id="area-readout" class="sr-only">Total roof: -- m²  ·  Obstructed: -- m²  =  Usable: -- m² | Est. system size: -- kW</span>
+    <div class="map-toolbar-actions">
+      <button id="clear-obstructions-btn" type="button" class="btn-text">Clear obstructions</button>
+      <button id="clear-all-btn" type="button" class="btn-text">Clear all</button>
+    </div>
+  </div>
+</section>
+
+<section class="system-options-panel">
+  <div class="section-heading-row">
+    <div>
+      <span class="eyebrow">STEP 03 / CONFIGURATION</span>
+      <h3>Configure your solar system</h3>
+      <p class="options-hint">Fine-tune the recommendation based on electricity usage, property type and rooftop conditions.</p>
+    </div>
+    <span class="section-index">03</span>
+  </div>
+
+  <div class="options-grid">
+    <div class="option-card">
+      <label for="monthly-bill">Average monthly electricity bill (₹)</label>
+      <input type="number" id="monthly-bill" min="0" step="100" placeholder="e.g. 5000">
+      <small>Example: ₹5,000 ≈ 500 units ≈ 3.5–4 kW.</small>
+    </div>
+
+    <div class="option-card">
+      <label for="property-type">Property type</label>
+      <select id="property-type">
+        <option value="residential" {% if preferences.get('property_type', 'residential') == 'residential' %}selected{% endif %}>Residential home</option>
+        <option value="commercial" {% if preferences.get('property_type') == 'commercial' %}selected{% endif %}>Shop / office / commercial</option>
+        <option value="remote" {% if preferences.get('property_type') == 'remote' %}selected{% endif %}>Remote / unreliable grid</option>
+      </select>
+      <small>Affects inverter recommendation (On-Grid / Hybrid / Off-Grid).</small>
+    </div>
+
+    <div class="option-card">
+      <label for="orientation-select">Roof Orientation (Azimuth)</label>
+      <select id="orientation-select">
+        <option value="auto" {% if preferences.get('orientation', 'auto') == 'auto' %}selected{% endif %}>Auto-detect from drawing</option>
+        <option value="180" {% if preferences.get('orientation') == '180' %}selected{% endif %}>South (best for India)</option>
+        <option value="135" {% if preferences.get('orientation') == '135' %}selected{% endif %}>South-East</option>
+        <option value="225" {% if preferences.get('orientation') == '225' %}selected{% endif %}>South-West</option>
+        <option value="90" {% if preferences.get('orientation') == '90' %}selected{% endif %}>East</option>
+        <option value="270" {% if preferences.get('orientation') == '270' %}selected{% endif %}>West</option>
+        <option value="0" {% if preferences.get('orientation') == '0' %}selected{% endif %}>North (lowest yield)</option>
+      </select>
+      <small id="orientation-hint">South-facing roofs in North India typically yield the highest annual generation.</small>
+    </div>
+
+    <div class="option-card">
+      <label for="inverter-preference">Preferred inverter</label>
+      <select id="inverter-preference">
+        <option value="auto">Auto-recommend</option>
+        <option value="on-grid">On-Grid (bill savings, stable supply)</option>
+        <option value="hybrid">Hybrid (backup + battery)</option>
+        <option value="off-grid">Off-Grid (full independence)</option>
+      </select>
+      <small>On-Grid &amp; Hybrid often subsidy-eligible; Off-Grid usually not.</small>
+    </div>
+
+    <div class="option-card">
+      <label class="checkbox-label">
+        <input type="checkbox" id="needs-backup">
+        Need backup during power cuts
+      </label>
+      <label class="checkbox-label" style="margin-top:10px;">
+        <input type="checkbox" id="battery-toggle">
+        Include battery storage
+      </label>
+      <div id="battery-size-wrap" class="battery-size-wrap hidden">
+        <label for="battery-size">Battery capacity</label>
+        <select id="battery-size">
+          <option value="5">5 kWh (small home)</option>
+          <option value="10" selected>10 kWh (recommended)</option>
+          <option value="15">15 kWh</option>
+          <option value="20">20 kWh (larger home)</option>
+        </select>
+        <small>~₹9,000 per kWh (LFP). Improves self-consumption &amp; backup.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="options-actions">
+    <button id="start-estimation-btn" type="button" class="btn-primary-lg" disabled>Calculate my solar potential <span aria-hidden="true">→</span></button>
+  </div>
+</section>
+
+<section id="loading-panel" class="loading-panel hidden">
+  <span class="loading-spinner" aria-hidden="true"></span>
+  <div><strong>Analyzing your rooftop…</strong><p>Crunching irradiance, orientation and storage options.</p></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script>
+  const ESTIMATE_URL = "{{ url_for('routes.api_estimate') }}";
+  const GEOCODE_URL = "{{ url_for('routes.api_geocode') }}";
+  const REVERSE_GEOCODE_URL = "{{ url_for('routes.api_reverse_geocode') }}";
+  const PARSE_MAPS_URL = "{{ url_for('routes.api_parse_maps_url') }}";
+</script>
+<script src="{{ url_for('static', filename='js/map.js', v='20260910-2') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v='20260910-2') }}"></script>
+{% endblock %}
