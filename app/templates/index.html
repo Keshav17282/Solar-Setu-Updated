@@ -2,16 +2,26 @@
 {% block title %}Solar Setu — Estimates{% endblock %}
 
 {% block content %}
+<!-- ========== HERO (Improved) ========== -->
 <section class="hero-row">
   <div class="hero-copy">
     <span class="eyebrow"><span class="eyebrow-dot"></span> SOLAR INTELLIGENCE PLATFORM</span>
     <h1>Turn your rooftop<br><span class="grad-text">into clean energy.</span></h1>
-    <p class="subtitle">Analyze your rooftop, estimate solar potential, calculate savings and understand your environmental impact in one guided journey.</p>
+    <p class="subtitle">Get a free, accurate solar estimate in under 2 minutes — system size, savings, subsidy and payback, all in one guided flow.</p>
+    
     <div class="hero-actions">
-      <a class="btn-primary" href="#search-panel">Start Rooftop Analysis <span aria-hidden="true">→</span></a>
-      <a class="btn-ghost" href="#why-solar">Explore the platform <span aria-hidden="true">↓</span></a>
+      <a class="btn-primary" href="#search-panel">Start free rooftop analysis <span aria-hidden="true">→</span></a>
+      <a class="btn-ghost" href="#why-solar">See how it works <span aria-hidden="true">↓</span></a>
+    </div>
+
+    <!-- Trust signals under CTAs -->
+    <div class="hero-trust">
+      <span class="hero-trust-item">⏱ Takes ~2 min</span>
+      <span class="hero-trust-item">🏛 PM Surya Ghar ready</span>
+      <span class="hero-trust-item">✓ Free estimate</span>
     </div>
   </div>
+
   <div class="hero-art" aria-hidden="true">
     <div class="hero-sun">☼</div>
     <div class="hero-roof">
@@ -23,6 +33,7 @@
   </div>
 </section>
 
+<!-- Trust strip -->
 <div class="trust-strip" aria-label="Solar Setu capabilities">
   <span><b>01</b> Satellite mapping</span>
   <span><b>02</b> Smart sizing</span>
@@ -30,26 +41,31 @@
   <span><b>04</b> Impact insights</span>
 </div>
 
+<!-- ========== STEP 01 / LOCATION (Improved) ========== -->
 <section class="search-panel" id="search-panel">
   <div class="section-heading-row">
     <div>
       <span class="eyebrow">STEP 01 / LOCATION</span>
       <h2>Find your rooftop</h2>
-      <p>Search an address or drop a pin to begin your solar analysis.</p>
+      <p>Search your address, society or paste a Google Maps link to begin.</p>
     </div>
     <span class="section-index">01</span>
   </div>
+
   <div class="search-box">
     <span class="input-icon" aria-hidden="true">⌖</span>
-    <input type="text" id="address-search" placeholder="Search place, society, college, or full address">
+    <input type="text" id="address-search" placeholder="Search place, society, college or full address" autocomplete="street-address">
     <button id="search-btn" type="button">Find rooftop <span aria-hidden="true">→</span></button>
     <button id="locate-btn" type="button" title="Use current location" aria-label="Use current location">⌖</button>
   </div>
+
   <div class="maps-link-box">
     <span class="input-icon" aria-hidden="true">↗</span>
     <input type="text" id="maps-link-input" placeholder="Or paste a Google Maps link (maps.app.goo.gl / maps.google.com)">
     <button id="maps-link-btn" type="button">Use map link</button>
   </div>
+
+  <p class="search-helper">Tip: After selecting location, scroll down and draw your rooftop boundary on the map.</p>
   <div id="search-results" class="search-results"></div>
 </section>
 

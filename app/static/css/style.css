@@ -946,3 +946,44 @@ a, button, input, select { -webkit-tap-highlight-color: transparent; }
   .surya-messages { padding-bottom: 12px; }
   .surya-report-cta { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
+/* ========== Hero + Step 01 improvements (2026-10) ========== */
+.hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 20px;
+}
+.hero-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray, #7a7391);
+  background: #f3effb;
+  border: 1px solid var(--border, #ece7f7);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.search-helper {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--gray, #7a7391);
+  line-height: 1.45;
+}
+.btn-primary {
+  font-size: 14px;
+  padding: 14px 22px;
+}
+@media (max-width: 640px) {
+  .hero-trust {
+    gap: 8px;
+  }
+  .hero-trust-item {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+  .search-helper {
+    font-size: 11px;
+  }
+}
