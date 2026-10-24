@@ -58,17 +58,26 @@ def ask_surya(message: str, context: Any) -> tuple[str, int]:
     if len(clean_message) > MAX_MESSAGE_LENGTH:
         return f"Please keep your question under {MAX_MESSAGE_LENGTH} characters.", 400
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        api_key = os.environ.get("AI_API_KEY", "").strip()
+    
+    provider = os.environ.get("AI_PROVIDER", "groq").strip().lower()
+
+    if provider == "gemini":
+        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    else:
+        api_key = os.environ.get("GROQ_API_KEY", "").strip()
+
     if not api_key:
         return _fallback_message(), 503
 
     import json
 
-    context_json = json.dumps(_clean_context(context), ensure_ascii=True, separators=(",", ":"))
+    context_json = json.dumps(
+        _clean_context(context),
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
     context_json = context_json[:MAX_CONTEXT_LENGTH]
-    provider = os.environ.get("AI_PROVIDER", "").strip().lower() or "gemini"
+
 
     if provider == "gemini":
         model = os.environ.get("AI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
