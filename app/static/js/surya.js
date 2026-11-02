@@ -1,6 +1,7 @@
 // Surya is a lightweight, context-aware chat layer for Solar Setu.
 (() => {
-  const launcher = document.getElementById('surya-launcher');
+  const launchers = Array.from(document.querySelectorAll('#surya-launcher, [data-surya-launcher]'));
+  const launcher = launchers[0];
   const panel = document.getElementById('surya-panel');
   const closeButton = document.getElementById('surya-close');
   const minimizeButton = document.getElementById('surya-minimize');
@@ -25,14 +26,14 @@
   function openPanel() {
     panel.classList.add('is-open');
     panel.setAttribute('aria-hidden', 'false');
-    launcher.setAttribute('aria-expanded', 'true');
+    launchers.forEach((item) => item.setAttribute('aria-expanded', 'true'));
     input.focus();
   }
 
   function closePanel() {
     panel.classList.remove('is-open');
     panel.setAttribute('aria-hidden', 'true');
-    launcher.setAttribute('aria-expanded', 'false');
+    launchers.forEach((item) => item.setAttribute('aria-expanded', 'false'));
   }
 
   function addMessage(role, text, persist = true) {
@@ -119,12 +120,16 @@
     try {
       const response = await fetch(window.SURYA_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
         body: JSON.stringify({ message, context })
       });
       const data = await response.json().catch(() => ({}));
       thinking.remove();
-      addMessage('assistant', data.reply || "Sorry, I couldn't connect right now. Please try again.");
+      addMessage('assistant', data.reply || (
+        response.status >= 500
+          ? 'Surya is temporarily unavailable. Please try again in a moment.'
+          : "Sorry, I couldn't connect right now. Please try again."
+      ));
     } catch (error) {
       thinking.remove();
       addMessage('assistant', "Sorry, I couldn't connect right now. Please try again.");
@@ -134,10 +139,10 @@
     }
   }
 
-  launcher.addEventListener('click', () => {
+  launchers.forEach((item) => item.addEventListener('click', () => {
     if (panel.classList.contains('is-open')) closePanel();
     else openPanel();
-  });
+  }));
   closeButton?.addEventListener('click', closePanel);
   minimizeButton?.addEventListener('click', closePanel);
   form.addEventListener('submit', (event) => {

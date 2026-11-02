@@ -1,0 +1,24 @@
+{
+  "currency": "INR",
+  "price_basis": "Fully installed indicative residential market benchmark; installation and balance-of-system components are included, where applicable.",
+  "technologies": {
+    "lfp": {
+      "label": "Lithium iron phosphate (LFP)",
+      "minimum_per_kwh": 15000,
+      "maximum_per_kwh": 19000,
+      "vendor_data_available": false
+    },
+    "nmc": {
+      "label": "Nickel manganese cobalt (NMC)",
+      "minimum_per_kwh": null,
+      "maximum_per_kwh": null,
+      "vendor_data_available": false
+    },
+    "lead-acid": {
+      "label": "Lead-acid",
+      "minimum_per_kwh": null,
+      "maximum_per_kwh": null,
+      "vendor_data_available": false
+    }
+  }
+}

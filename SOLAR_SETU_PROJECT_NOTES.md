@@ -44,7 +44,7 @@ It allows users to:
 ### AI
 
 - Surya AI uses an external AI provider.
-- Gemini or an OpenAI-compatible provider can be configured.
+- Groq is used for the Surya AI conversational backend.
 - API keys are stored in environment variables and should not be committed to source code.
 
 ---

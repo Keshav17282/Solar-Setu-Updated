@@ -2,6 +2,30 @@
 {% block title %}Solar Setu — Detailed Report{% endblock %}
 
 {% block content %}
+<aside class="report-sidebar" aria-label="Solar report navigation">
+  <a class="report-sidebar-brand" href="{{ url_for('routes.index') }}">
+    <span class="report-sidebar-mark" aria-hidden="true">☀</span>
+    <span><strong>SOLAR SETU</strong><small>The Solar Survey Sheet</small></span>
+  </a>
+  <nav>
+    <small>HOME</small>
+    <a href="{{ url_for('routes.dashboard') }}"><span aria-hidden="true">⌂</span> Dashboard</a>
+    <a href="{{ url_for('routes.savings') }}"><span aria-hidden="true">₹</span> Savings Overview</a>
+    <small>NEW ESTIMATE</small>
+    <a class="active" href="{{ url_for('routes.index') }}#search-panel"><span aria-hidden="true">✳</span> Create Estimate</a>
+    <small>MY PROPERTIES</small>
+    <a href="{{ url_for('routes.dashboard') }}"><span aria-hidden="true">⌂</span> Saved Properties</a>
+    <a href="{{ url_for('routes.compare') }}"><span aria-hidden="true">▥</span> Compare Scenarios</a>
+    <small>ACCOUNT</small>
+    <a href="{{ url_for('routes.profile') }}"><span aria-hidden="true">♙</span> Profile</a>
+    <a href="{{ url_for('routes.settings') }}"><span aria-hidden="true">⚙</span> Settings</a>
+  </nav>
+  <div class="report-planning-note">
+    <strong>Planning note</strong>
+    <p>Start with the roof you control. Solar Setu keeps your estimate clear and practical.</p>
+  </div>
+</aside>
+<div class="solar-report-page">
 <section class="report-header">
   <div>
     <span class="eyebrow">SOLAR INTELLIGENCE / RESULTS</span>
@@ -17,27 +41,27 @@
     {% endif %}
     <div style="margin-top:10px;">
       {% if loc.orientation_label %}
-      <span class="orientation-badge">🧭 {{ loc.orientation_label }}
+      <span class="orientation-badge"><span aria-hidden="true">◈</span> {{ loc.orientation_label }}
         {% if loc.orientation_deg is not none %}({{ loc.orientation_deg }}°){% endif %}
       </span>
       {% endif %}
       {% if loc.battery_kwh and loc.battery_kwh > 0 %}
-      <span class="battery-badge">🔋 {{ loc.battery_kwh }} kWh battery</span>
+      <span class="battery-badge"><span aria-hidden="true">▣</span> {{ loc.battery_kwh }} kWh battery</span>
       {% endif %}
       {% if loc.inverter_type %}
-      <span class="orientation-badge">⚡ {{ loc.inverter_type }} inverter</span>
+      <span class="orientation-badge"><span aria-hidden="true">ϟ</span> {{ loc.inverter_type }} inverter</span>
       {% endif %}
     </div>
   </div>
   <div class="report-header-actions">
-    <a class="btn btn-secondary" href="{{ url_for('routes.download_pdf', location_id=loc.id) }}">Download PDF</a>
-    <a class="btn btn-primary" href="{{ url_for('routes.compare', location_id=loc.id) }}">Compare Solar Solutions <span aria-hidden="true">→</span></a>
+    <a class="report-action report-pdf-action" href="{{ url_for('routes.download_pdf', location_id=loc.id) }}"><span class="report-action-icon" aria-hidden="true">↓</span><span>Download PDF</span></a>
+    <a class="report-action report-compare-action" href="{{ url_for('routes.compare', location_id=loc.id) }}"><span>Compare solutions</span><span aria-hidden="true">→</span></a>
     {% if current_user and loc.user_id == current_user.id %}
     <span class="saved-report-badge">✓ Report saved</span>
     {% else %}
     <form method="post" action="{{ url_for('routes.save_report', location_id=loc.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button class="btn btn-save-report" type="submit">Save Report</button>
+      <button class="report-action report-save-action" type="submit"><span class="report-action-icon" aria-hidden="true">◇</span><span>Save report</span></button>
     </form>
     {% endif %}
   </div>
@@ -72,10 +96,11 @@
 </div>
 
 <nav class="tabs">
-  <button class="tab-btn active" data-tab="overview">Overview</button>
-  <button class="tab-btn" data-tab="generation">Generation</button>
-  <button class="tab-btn" data-tab="financial">Financial</button>
+  <button class="tab-btn active" data-tab="overview">System Sizing</button>
+  <button class="tab-btn" data-tab="generation">Energy Forecasting</button>
+  <button class="tab-btn" data-tab="financial">Financing Options</button>
   <button class="tab-btn" data-tab="environmental">Environmental</button>
+  <button class="tab-btn" data-tab="next-steps">Next Steps</button>
 </nav>
 
 <section id="tab-overview" class="tab-panel active">
@@ -103,10 +128,10 @@
   </div>
 
   {% if loc.inverter %}
-  <h3 style="margin:20px 0 10px;font-size:15px;color:var(--purple-dark);">Recommended Inverter — {{ loc.inverter.type }}</h3>
+  <div class="report-section-heading"><h3>Recommended System Type</h3><span>{{ loc.inverter.type }}</span></div>
   <div class="area-breakdown-card">
     <div class="area-row"><span>Best for</span><span style="text-align:right;max-width:60%;">{{ loc.inverter.best_for }}</span></div>
-    <div class="area-row"><span>Subsidy eligibility</span><span>{% if loc.inverter.subsidy_eligible %}Eligible (typical){% else %}Usually not eligible{% endif %}</span></div>
+    <div class="area-row"><span>Subsidy eligibility</span><span>{% set system_type = (loc.inverter.type or loc.inverter_type or '')|lower %}{% if loc.property_type == 'residential' and 'hybrid' not in system_type and 'off-grid' not in system_type and loc.inverter.subsidy_eligible %}Possible eligibility, subject to approved DISCOM/PM Surya Ghar terms{% else %}No automatic PM Surya Ghar eligibility confirmed{% endif %}</span></div>
   </div>
   <ul style="font-size:13px;color:var(--gray);margin:10px 0 0 18px;line-height:1.5;">
     {% for a in loc.inverter.advantages %}
@@ -150,7 +175,9 @@
   {% if loc.battery_kwh and loc.battery_kwh > 0 %}
   <div class="area-breakdown-card" style="margin-top:16px;">
     <div class="area-row"><span>Battery Capacity</span><span>{{ loc.battery_kwh }} kWh</span></div>
-    <div class="area-row"><span>Battery Cost (est.)</span><span>₹{{ '{:,.0f}'.format(loc.battery_cost or 0) }}</span></div>
+    <div class="area-row"><span>Battery Cost range (est.)</span>
+      <span>{% if loc.battery_cost_min is not none and loc.battery_cost_max is not none %}₹{{ '{:,.0f}'.format(loc.battery_cost_min) }}–₹{{ '{:,.0f}'.format(loc.battery_cost_max) }}{% else %}Vendor quotation required{% endif %}</span>
+    </div>
     <div class="area-row total"><span>Self-consumption share</span><span>{{ ((loc.self_consumption_frac or 0.55) * 100)|int }}%</span></div>
   </div>
   {% endif %}
@@ -165,7 +192,7 @@
     {% if loc.system_cost_low and loc.system_cost_high %}• This system cost band: ₹{{ '{:,.0f}'.format(loc.system_cost_low) }} – ₹{{ '{:,.0f}'.format(loc.system_cost_high) }} (excl. unusual civil/structure)<br>{% endif %}
     {% if loc.annual_om %}• Indicative annual O&amp;M reserve ≈ ₹{{ '{:,.0f}'.format(loc.annual_om) }} (~1.2% of system cost)<br>{% endif %}
     • Orientation factor applied · recommended tilt ≈ latitude ({{ loc.recommended_tilt_deg or '—' }}°)<br>
-    {% if loc.battery_kwh and loc.battery_kwh > 0 %}• Battery ≈ ₹9,000/kWh (LFP); nominal size ≠ usable energy (DoD × efficiency)<br>{% endif %}
+    {% if loc.battery_kwh and loc.battery_kwh > 0 %}• Indicative fully installed LFP range: ₹15,000–₹19,000/kWh (market estimate, not an official rate).<br>{% endif %}
     • 0.5%/yr degradation in 25-yr cashflow · tariff held constant · not a licensed design or DISCOM quote
   </div>
 
@@ -195,12 +222,13 @@
 
 <section id="tab-financial" class="tab-panel">
   <h2>Financial Summary</h2>
+  <div class="financial-layout">
   <div class="chart-card">
     <div class="chart-frame">
       <canvas id="financialDonutChart" height="180"></canvas>
     </div>
   </div>
-  <div class="financial-summary-box" style="margin-top:14px;">
+  <div class="financial-summary-box">
     <div class="fin-row"><span>PV System Cost (mid estimate)</span><span>₹{{ '{:,.0f}'.format(loc.system_cost or 0) }}</span></div>
     {% if loc.system_cost_low and loc.system_cost_high %}
     <div class="fin-row"><span>Typical cost band</span><span>₹{{ '{:,.0f}'.format(loc.system_cost_low) }} – ₹{{ '{:,.0f}'.format(loc.system_cost_high) }}</span></div>
@@ -208,12 +236,20 @@
     {% if loc.battery_cost and loc.battery_cost > 0 %}
     <div class="fin-row"><span>Battery Storage Cost</span><span>₹{{ '{:,.0f}'.format(loc.battery_cost) }}</span></div>
     {% endif %}
-    <div class="fin-row"><span>PM Surya Ghar Subsidy</span><span>-₹{{ '{:,.0f}'.format(loc.subsidy_amount or 0) }}</span></div>
+    <div class="fin-row"><span>Central PM Surya Ghar Subsidy (estimated)</span><span>-₹{{ '{:,.0f}'.format(loc.central_subsidy_amount or 0) }}</span></div>
+    {% if loc.subsidy_state == 'Uttar Pradesh' %}
+    <div class="fin-row"><span>Uttar Pradesh State Subsidy (estimated)</span><span>-₹{{ '{:,.0f}'.format(loc.state_subsidy_amount or 0) }}</span></div>
+    {% endif %}
+    <div class="fin-row"><span>Total Estimated Subsidy</span><span>-₹{{ '{:,.0f}'.format(loc.total_estimated_subsidy or loc.subsidy_amount or 0) }}</span></div>
+    {% if loc.subsidy_eligibility_status %}
+    <p class="subsidy-status-note"><strong>{{ loc.subsidy_eligibility_status }}</strong><br>{{ loc.subsidy_explanation }}</p>
+    {% endif %}
     <div class="fin-row total"><span>Net Investment</span><span>₹{{ '{:,.0f}'.format(loc.net_investment or 0) }}</span></div>
     <div class="fin-row"><span>Est. 25-year bill savings</span><span>₹{{ '{:,.0f}'.format((loc.monthly_savings or 0) * 12 * 25) }}</span></div>
     {% if loc.lcoe %}
     <div class="fin-row"><span>Levelised cost of energy</span><span>₹{{ loc.lcoe }}/kWh</span></div>
     {% endif %}
+  </div>
   </div>
   <h2>Cashflow Over 25 Years</h2>
   <p style="font-size:12px;color:var(--gray);">Includes 0.5%/yr degradation; tariff assumed constant.</p>
@@ -264,6 +300,17 @@
   {% endif %}
   <div class="green-banner">Be a part of a cleaner &amp; greener India 🌱 — Every rooftop counts.</div>
 </section>
+
+<section id="tab-next-steps" class="tab-panel">
+  <h2>Recommended Next Steps</h2>
+  <div class="next-step-grid">
+    <article><span>01</span><strong>Verify the roof</strong><p>Confirm usable area, obstructions, structure and shading with a qualified installer.</p></article>
+    <article><span>02</span><strong>Compare quotations</strong><p>Check panel, inverter, warranty, workmanship and installation terms against this estimate.</p></article>
+    <article><span>03</span><strong>Confirm subsidy eligibility</strong><p>Check current PM Surya Ghar and DISCOM rules before placing an order.</p></article>
+  </div>
+  <a class="btn btn-primary report-next-action" href="{{ url_for('routes.compare') }}">Compare Solar Solutions <span aria-hidden="true">→</span></a>
+</section>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -295,5 +342,5 @@
   const TOTAL_25YR_SAVINGS = {{ ((loc.monthly_savings or 0) * 12 * 25) | tojson }};
   const BATTERY_COST = {{ (loc.battery_cost or 0) | tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/main.js', v='20260910-2') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v='20261102-4-inter') }}"></script>
 {% endblock %}

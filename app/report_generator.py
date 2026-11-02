@@ -278,7 +278,10 @@ def _generate_pdf_reportlab(loc):
         fin.append(("Typical cost band", f"{_inr(loc['system_cost_low'])} – {_inr(loc['system_cost_high'])}"))
     if loc.get("battery_cost"):
         fin.append((f"Battery ({loc.get('battery_kwh')} kWh)", _inr(loc.get("battery_cost"))))
-    fin.append(("PM Surya Ghar subsidy", f"-{_inr(loc.get('subsidy_amount'))}"))
+    fin.append(("Central PM Surya Ghar Subsidy (estimated)", f"-{_inr(loc.get('central_subsidy_amount'))}"))
+    if loc.get("subsidy_state") == "Uttar Pradesh":
+        fin.append(("Uttar Pradesh State Subsidy (estimated)", f"-{_inr(loc.get('state_subsidy_amount'))}"))
+    fin.append(("Total Estimated Subsidy", f"-{_inr(loc.get('total_estimated_subsidy') or loc.get('subsidy_amount'))}"))
     fin.append(("Net investment", _inr(loc.get("net_investment"))))
     fin.append(("Estimated monthly savings", _inr(loc.get("monthly_savings"))))
     fin.append(("Est. 25-year bill savings", _inr((loc.get("monthly_savings") or 0) * 12 * 25)))

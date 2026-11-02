@@ -102,7 +102,7 @@
   document.getElementById('reset-filters')?.addEventListener('click', () => { document.querySelectorAll('.compare-controls select').forEach(select => { select.selectedIndex = 0; }); applyFilters(); });
   document.getElementById('score-help')?.addEventListener('click', () => { const node = document.getElementById('score-explanation'); node.hidden = !node.hidden; });
   document.getElementById('save-comparison')?.addEventListener('click', async () => {
-    const response = await fetch('/api/comparisons', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ solution_ids: [...selected], location_id: window.COMPARE_LOCATION.id, priority: document.getElementById('priority').value }) });
+    const response = await fetch('/api/comparisons', { method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN}, body: JSON.stringify({ solution_ids: [...selected], location_id: window.COMPARE_LOCATION.id, priority: document.getElementById('priority').value }) });
     const data = await response.json();
     if (!response.ok && response.status === 401) { window.location.href = `/signup?next=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
     alert(data.id ? 'Comparison saved to your account.' : (data.error || 'Unable to save comparison.'));

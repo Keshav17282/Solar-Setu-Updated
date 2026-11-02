@@ -3,14 +3,20 @@
 import os
 from typing import Any
 
-import requests
+from groq import (
+    APIConnectionError,
+    APIError,
+    APIStatusError,
+    APITimeoutError,
+    AuthenticationError,
+    Groq,
+    RateLimitError,
+)
 
 
 MAX_MESSAGE_LENGTH = 1200
 MAX_CONTEXT_LENGTH = 12000
-DEFAULT_API_URL = "https://api.openai.com/v1/chat/completions"
-DEFAULT_MODEL = "gpt-4o-mini"
-DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are Surya, Solar Setu's friendly solar-energy assistant.
 Explain rooftop solar results in concise, simple language for an Indian user.
@@ -51,23 +57,16 @@ def _fallback_message() -> str:
 
 
 def ask_surya(message: str, context: Any) -> tuple[str, int]:
-    """Ask the configured OpenAI-compatible provider, without exposing secrets."""
+    """Ask Groq without exposing provider credentials to the browser."""
     clean_message = (message or "").strip()
     if not clean_message:
         return "Please ask me something about your rooftop solar analysis.", 400
     if len(clean_message) > MAX_MESSAGE_LENGTH:
         return f"Please keep your question under {MAX_MESSAGE_LENGTH} characters.", 400
 
-    
-    provider = os.environ.get("AI_PROVIDER", "groq").strip().lower()
-
-    if provider == "gemini":
-        api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    else:
-        api_key = os.environ.get("GROQ_API_KEY", "").strip()
-
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
-        return _fallback_message(), 503
+        return "Groq is not configured yet. Set GROQ_API_KEY on the server and restart Solar Setu.", 503
 
     import json
 
@@ -75,83 +74,44 @@ def ask_surya(message: str, context: Any) -> tuple[str, int]:
         _clean_context(context),
         ensure_ascii=True,
         separators=(",", ":"),
-    )
-    context_json = context_json[:MAX_CONTEXT_LENGTH]
-
-
-    if provider == "gemini":
-        model = os.environ.get("AI_MODEL", DEFAULT_GEMINI_MODEL).strip() or DEFAULT_GEMINI_MODEL
-        api_url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={api_key}"
-        )
-        payload = {
-            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-            "contents": [{
-                "parts": [{
-                    "text": f"Solar Setu analysis context:\n{context_json}\n\nUser question:\n{clean_message}"
-                }]
-            }],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 1400,
-                "thinkingConfig": {"thinkingLevel": "low"},
-            },
-        }
-        try:
-            response = requests.post(api_url, json=payload, timeout=12)
-            if response.status_code in (401, 403):
-                return "The Gemini API key was rejected. Check the key and Gemini API access.", response.status_code
-            if response.status_code == 429:
-                return "Surya reached the Gemini free-tier limit. Please wait and try again later.", 429
-            response.raise_for_status()
-            data = response.json()
-            parts = ((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
-            reply = "".join(part.get("text", "") for part in parts if isinstance(part, dict))
-            if not reply.strip():
-                return "The Gemini service returned an empty answer. Please try again.", 502
-            return reply.strip()[:5000], 200
-        except (requests.RequestException, ValueError, KeyError, TypeError, IndexError):
-            return "I couldn't connect to Gemini right now. Please try again in a moment.", 502
-
-    api_url = os.environ.get("AI_API_URL", DEFAULT_API_URL).strip() or DEFAULT_API_URL
-    model = os.environ.get("AI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
-    payload = {
-        "model": model,
-        "temperature": 0.25,
-        "max_tokens": 450,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": f"Solar Setu analysis context:\n{context_json}\n\nUser question:\n{clean_message}",
-            },
-        ],
-    }
+    )[:MAX_CONTEXT_LENGTH]
+    model = os.environ.get("GROQ_MODEL", os.environ.get("AI_MODEL", DEFAULT_MODEL)).strip()
+    model = model or DEFAULT_MODEL
 
     try:
-        response = requests.post(
-            api_url,
-            json=payload,
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            timeout=12,
+        client = Groq(api_key=api_key, timeout=12.0)
+        completion = client.chat.completions.create(
+            model=model,
+            temperature=0.25,
+            max_completion_tokens=450,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Solar Setu analysis context:\n{context_json}\n\n"
+                        f"User question:\n{clean_message}"
+                    ),
+                },
+            ],
         )
-        if response.status_code == 429:
-            try:
-                error_code = (response.json().get("error") or {}).get("code")
-            except ValueError:
-                error_code = None
-            if error_code in ("insufficient_quota", "credit_balance_exhausted"):
-                return (
-                    "Surya is connected, but this API account has no credits remaining. "
-                    "Add API credits in the provider billing dashboard, then restart Solar Setu.",
-                    429,
-                )
-        response.raise_for_status()
-        data = response.json()
-        reply = ((data.get("choices") or [{}])[0].get("message") or {}).get("content")
+        reply = completion.choices[0].message.content
         if not isinstance(reply, str) or not reply.strip():
-            return "The AI service returned an empty answer. Please try again.", 502
+            return "The Groq service returned an empty answer. Please try again.", 502
         return reply.strip()[:5000], 200
-    except (requests.RequestException, ValueError, KeyError, TypeError, IndexError):
+    except AuthenticationError:
+        return "Surya's Groq API key was rejected. Check GROQ_API_KEY and restart Solar Setu.", 503
+    except RateLimitError:
+        return "Surya reached the Groq rate limit. Please wait and try again.", 429
+    except APITimeoutError:
+        return "Surya timed out while connecting to Groq. Please try again in a moment.", 504
+    except APIConnectionError:
+        return "I couldn't connect to Groq right now. Please try again in a moment.", 502
+    except APIStatusError:
+        return "Groq is temporarily unable to answer. Please try again in a moment.", 502
+    except APIError as error:
+        if getattr(error, "status_code", None) == 404:
+            return "The configured Groq model is unavailable. Set GROQ_MODEL to an available Groq chat model.", 502
+        return "Groq returned an API error. Please try again in a moment.", 502
+    except (IndexError, KeyError, TypeError, ValueError):
         return "I couldn't connect to Surya right now. Please try again in a moment.", 502

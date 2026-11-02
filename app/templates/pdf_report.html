@@ -116,9 +116,15 @@
   <div class="fin-row"><span>Typical cost band</span><span>₹{{ '{:,.0f}'.format(loc.system_cost_low) }} – ₹{{ '{:,.0f}'.format(loc.system_cost_high) }}</span></div>
   {% endif %}
   {% if loc.battery_cost and loc.battery_cost > 0 %}
-  <div class="fin-row"><span>Battery storage ({{ loc.battery_kwh }} kWh)</span><span>₹{{ '{:,.0f}'.format(loc.battery_cost) }}</span></div>
+  <div class="fin-row"><span>Battery storage ({{ loc.battery_kwh }} kWh, estimated installed range)</span>
+    <span>{% if loc.battery_cost_min is not none and loc.battery_cost_max is not none %}₹{{ '{:,.0f}'.format(loc.battery_cost_min) }}–₹{{ '{:,.0f}'.format(loc.battery_cost_max) }}{% else %}Vendor quotation required{% endif %}</span>
+  </div>
   {% endif %}
-  <div class="fin-row"><span>PM Surya Ghar subsidy</span><span>-₹{{ '{:,.0f}'.format(loc.subsidy_amount or 0) }}</span></div>
+  <div class="fin-row"><span>Central PM Surya Ghar Subsidy (estimated)</span><span>-₹{{ '{:,.0f}'.format(loc.central_subsidy_amount or 0) }}</span></div>
+  {% if loc.subsidy_state == 'Uttar Pradesh' %}
+  <div class="fin-row"><span>Uttar Pradesh State Subsidy (estimated)</span><span>-₹{{ '{:,.0f}'.format(loc.state_subsidy_amount or 0) }}</span></div>
+  {% endif %}
+  <div class="fin-row"><span>Total Estimated Subsidy</span><span>-₹{{ '{:,.0f}'.format(loc.total_estimated_subsidy or loc.subsidy_amount or 0) }}</span></div>
   <div class="fin-row total"><span>Net investment</span><span>₹{{ '{:,.0f}'.format(loc.net_investment or 0) }}</span></div>
   <div class="fin-row"><span>Estimated monthly savings</span><span>₹{{ '{:,.0f}'.format(loc.monthly_savings or 0) }}</span></div>
   <div class="fin-row"><span>Est. 25-year bill savings (flat tariff)</span><span>₹{{ '{:,.0f}'.format((loc.monthly_savings or 0) * 12 * 25) }}</span></div>

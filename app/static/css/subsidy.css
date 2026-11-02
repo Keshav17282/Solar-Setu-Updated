@@ -1,0 +1,244 @@
+.subsidy-guide-page {
+  color: #1f342b;
+}
+
+.subsidy-guide-page,
+.subsidy-guide-page * {
+  box-sizing: border-box;
+}
+
+.subsidy-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .55fr);
+  gap: 48px;
+  align-items: end;
+  width: min(1180px, calc(100% - 48px));
+  margin: 38px auto 0;
+  padding: 64px;
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    linear-gradient(115deg, rgba(246, 241, 227, .98), rgba(246, 241, 227, .88)),
+    url("../images/solar-panels-roof.jpg") center/cover;
+}
+
+.subsidy-eyebrow,
+.subsidy-section-heading > span,
+.subsidy-info-grid article > span,
+.result-label {
+  color: #a95d1b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.subsidy-hero h1 {
+  max-width: 700px;
+  margin: 14px 0 18px;
+  color: #14382d;
+  font-size: clamp(38px, 6vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.subsidy-hero p {
+  max-width: 650px;
+  color: #55665e;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.subsidy-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.subsidy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.subsidy-button-primary { background: #176b4d; color: #fff; }
+.subsidy-button-secondary { border: 1px solid #d9ddd7; background: #fff; color: #15382d; }
+
+.subsidy-hero-stats {
+  display: grid;
+  gap: 12px;
+}
+
+.subsidy-hero-stats article {
+  display: grid;
+  gap: 5px;
+  padding: 22px;
+  border: 1px solid rgba(20,56,45,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 16px 40px rgba(20,56,45,.08);
+}
+
+.subsidy-hero-stats small { color: #6d776f; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.subsidy-hero-stats strong { color: #15382d; font-size: 30px; }
+.subsidy-hero-stats span { color: #69756d; font-size: 13px; }
+
+.subsidy-section {
+  width: min(1180px, calc(100% - 48px));
+  margin: 72px auto;
+}
+
+.subsidy-section-heading {
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+.subsidy-section-heading h2,
+.subsidy-info-grid h2 {
+  margin: 9px 0 10px;
+  color: #14382d;
+  font-size: 30px;
+  letter-spacing: -.025em;
+}
+
+.subsidy-section-heading p { color: #667269; }
+
+.subsidy-calculator-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, .8fr) minmax(0, 1.2fr);
+  gap: 22px;
+}
+
+.subsidy-calculator-form,
+.subsidy-result,
+.subsidy-info-grid article {
+  padding: 28px;
+  border: 1px solid #e1e5df;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(20,56,45,.06);
+}
+
+.subsidy-calculator-form {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.subsidy-calculator-form label { margin-top: 7px; color: #344b41; font-size: 13px; font-weight: 700; }
+.subsidy-calculator-form select,
+.subsidy-calculator-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid #d7ddd8;
+  border-radius: 9px;
+  background: #fff;
+  color: #1e332a;
+}
+
+.capacity-options { display: flex; gap: 7px; }
+.capacity-options button {
+  flex: 1;
+  min-height: 38px;
+  border: 1px solid #d9ded9;
+  border-radius: 8px;
+  background: #f8f9f7;
+  color: #395146;
+  cursor: pointer;
+}
+.capacity-options button.active { border-color: #176b4d; background: #edf7f2; color: #176b4d; font-weight: 800; }
+.subsidy-submit { margin-top: 18px; width: 100%; }
+
+.subsidy-result { background: linear-gradient(145deg, #fff, #f7faf7); }
+.result-status { margin: 12px 0 22px; color: #176b4d; font-size: 18px; font-weight: 700; }
+.subsidy-result.not-eligible .result-status { color: #98551d; }
+.result-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.result-grid article { min-width: 0; padding: 18px; border-radius: 12px; background: #f1f4f1; }
+.result-grid span { display: block; min-height: 34px; color: #69756d; font-size: 12px; }
+.result-grid strong { color: #14382d; font-size: clamp(20px, 2vw, 27px); }
+.subsidy-result > p { margin-top: 18px; color: #526159; line-height: 1.65; }
+.subsidy-result .result-warning { padding: 12px 14px; border-left: 3px solid #d68a33; border-radius: 5px; background: #fff8ed; color: #79501f; font-size: 13px; }
+.result-error { color: #b42318 !important; font-weight: 700; }
+
+.subsidy-table-wrap { overflow-x: auto; border: 1px solid #e1e5df; border-radius: 16px; }
+.subsidy-table-wrap table { width: 100%; border-collapse: collapse; background: #fff; }
+.subsidy-table-wrap th, .subsidy-table-wrap td { padding: 18px 22px; border-bottom: 1px solid #edf0ed; text-align: left; white-space: nowrap; }
+.subsidy-table-wrap th { background: #14382d; color: #fff; font-size: 12px; letter-spacing: .04em; }
+.subsidy-table-wrap td { color: #344b41; font-weight: 650; }
+.subsidy-table-wrap tr:last-child td { border-bottom: 0; }
+.subsidy-footnote { margin-top: 12px; color: #79501f; font-size: 12px; }
+
+.subsidy-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+.subsidy-info-grid ul { margin: 18px 0 0; padding-left: 18px; }
+.subsidy-info-grid li { margin: 10px 0; color: #526159; line-height: 1.55; }
+.subsidy-info-grid article p { margin-top: 18px; color: #79501f; font-size: 13px; line-height: 1.55; }
+
+.subsidy-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.subsidy-timeline article {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  align-items: start;
+  min-height: 130px;
+  padding: 20px;
+  border: 1px solid #e1e5df;
+  border-radius: 14px;
+  background: #fff;
+}
+.subsidy-timeline b { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 50%; background: #fff0d9; color: #a95d1b; }
+.subsidy-timeline p { margin: 0; color: #526159; line-height: 1.55; }
+.subsidy-disclaimer { margin-top: 16px; color: #667269; }
+
+.resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.resource-grid a { display: grid; gap: 6px; padding: 18px; border: 1px solid #e1e5df; border-radius: 12px; background: #fff; text-decoration: none; }
+.resource-grid b { color: #14382d; }
+.resource-grid span { color: #6b756f; font-size: 13px; }
+.subsidy-contact { padding: 16px; border-radius: 10px; background: #f4f0e7; color: #526159; }
+
+.subsidy-faq details { border-bottom: 1px solid #e2e5e1; }
+.subsidy-faq summary { padding: 18px 0; color: #14382d; font-weight: 700; cursor: pointer; }
+.subsidy-faq details p { margin: 0; padding: 0 20px 18px 0; color: #526159; line-height: 1.65; }
+
+@media (max-width: 900px) {
+  .subsidy-hero { grid-template-columns: 1fr; padding: 42px 32px; }
+  .subsidy-hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .subsidy-calculator-grid { grid-template-columns: 1fr; }
+  .subsidy-timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .subsidy-hero,
+  .subsidy-section { width: calc(100% - 24px); }
+  .subsidy-hero { margin-top: 12px; padding: 32px 20px; border-radius: 20px; }
+  .subsidy-hero h1 { font-size: 40px; }
+  .subsidy-hero-actions,
+  .capacity-options { flex-wrap: wrap; }
+  .subsidy-button { width: 100%; }
+  .subsidy-hero-stats,
+  .subsidy-info-grid,
+  .resource-grid,
+  .subsidy-timeline,
+  .result-grid { grid-template-columns: 1fr; }
+  .subsidy-section { margin: 48px auto; }
+  .subsidy-calculator-form,
+  .subsidy-result,
+  .subsidy-info-grid article { padding: 20px; }
+  .subsidy-section-heading h2,
+  .subsidy-info-grid h2 { font-size: 26px; }
+}

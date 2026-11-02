@@ -166,9 +166,24 @@ function initSystemOptions() {
   const batteryToggle = document.getElementById('battery-toggle');
   const batteryWrap = document.getElementById('battery-size-wrap');
   if (batteryToggle && batteryWrap) {
-    batteryToggle.addEventListener('change', () => {
+    const syncBatteryFields = () => {
       batteryWrap.classList.toggle('hidden', !batteryToggle.checked);
-    });
+      if (batteryToggle.checked) {
+        const needsBackup = document.getElementById('needs-backup');
+        if (needsBackup) needsBackup.checked = true;
+      }
+    };
+    batteryToggle.addEventListener('change', syncBatteryFields);
+    const needsBackup = document.getElementById('needs-backup');
+    if (needsBackup) {
+      needsBackup.addEventListener('change', () => {
+        if (needsBackup.checked) {
+          batteryToggle.checked = true;
+          syncBatteryFields();
+        }
+      });
+    }
+    syncBatteryFields();
   }
 }
 
@@ -196,9 +211,14 @@ function initEstimationButton() {
     const orientationSelect = document.getElementById('orientation-select');
     const orientationValue = orientationSelect ? orientationSelect.value : 'auto';
     const batteryEnabled = document.getElementById('battery-toggle')?.checked || false;
-    const batteryKwh = batteryEnabled
-      ? parseFloat(document.getElementById('battery-size')?.value || '10')
-      : 0;
+    const essentialLoad = parseFloat(document.getElementById('essential-load')?.value);
+    const backupHours = parseFloat(document.getElementById('backup-hours')?.value);
+    if (batteryEnabled && (!Number.isFinite(essentialLoad) || essentialLoad <= 0 || !Number.isFinite(backupHours) || backupHours <= 0)) {
+      window.alert('Enter essential load and backup duration to size the battery.');
+      btn.disabled = false;
+      return;
+    }
+    const batteryTechnology = document.getElementById('battery-technology')?.value || 'lfp';
     const monthlyBillRaw = document.getElementById('monthly-bill')?.value;
     const monthlyBill = monthlyBillRaw !== undefined && monthlyBillRaw !== ''
       ? parseFloat(monthlyBillRaw)
@@ -213,7 +233,7 @@ function initEstimationButton() {
     try {
       const res = await fetch(ESTIMATE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
         body: JSON.stringify({
           address: selectedAddress,
           latitude: selectedLatLng.lat,
@@ -221,10 +241,13 @@ function initEstimationButton() {
           polygon: polygon,
           obstructions: obstructions,
           orientation: orientationValue,
-          battery_kwh: batteryKwh,
+          battery_kwh: batteryEnabled ? 1 : 0,
+          essential_load_kw: batteryEnabled ? essentialLoad : null,
+          backup_hours: batteryEnabled ? backupHours : null,
+          battery_technology: batteryTechnology,
           monthly_bill: monthlyBill,
           property_type: propertyType,
-          needs_backup: needsBackup,
+          needs_backup: needsBackup || batteryEnabled,
           inverter_preference: inverterPreference
         })
       });
@@ -265,12 +288,16 @@ function initTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      window.dispatchEvent(new CustomEvent('solar-report-tab-change', {
+        detail: { tab: btn.dataset.tab }
+      }));
     });
   });
 }
 
 function initCharts() {
   if (typeof MONTHLY_DATA === 'undefined' || typeof Chart === 'undefined') return;
+  Chart.defaults.font.family = 'Inter, "Segoe UI", Arial, sans-serif';
 
   const months = Object.keys(MONTHLY_DATA);
   const values = Object.values(MONTHLY_DATA);
@@ -295,10 +322,12 @@ function initCharts() {
     canvas.parentElement?.classList.add('is-loading');
   };
 
-  const genCtx = document.getElementById('monthlyGenerationChart');
-  if (genCtx) {
+  const reportCharts = {};
+  const initGenerationChart = () => {
+    const genCtx = document.getElementById('monthlyGenerationChart');
+    if (!genCtx || reportCharts.generation) return;
     prepareCanvas(genCtx);
-    new Chart(genCtx, {
+    reportCharts.generation = new Chart(genCtx, {
       type: 'bar',
       data: {
         labels: months,
@@ -328,10 +357,11 @@ function initCharts() {
         }
       }
     });
-  }
+  };
 
-  const donutCtx = document.getElementById('financialDonutChart');
-  if (donutCtx && typeof NET_INVESTMENT !== 'undefined') {
+  const initFinancialCharts = () => {
+    const donutCtx = document.getElementById('financialDonutChart');
+    if (donutCtx && typeof NET_INVESTMENT !== 'undefined' && !reportCharts.financialDonut) {
     const labels = ['Net Investment', 'Subsidy', 'You Save (25yrs)'];
     const data = [NET_INVESTMENT, SUBSIDY_AMOUNT, TOTAL_25YR_SAVINGS];
     const colors = [palette.purple, palette.orange, palette.amber];
@@ -341,7 +371,7 @@ function initCharts() {
       colors.splice(1, 0, palette.green);
     }
     prepareCanvas(donutCtx);
-    new Chart(donutCtx, {
+    reportCharts.financialDonut = new Chart(donutCtx, {
       type: 'doughnut',
       data: {
         labels,
@@ -357,10 +387,10 @@ function initCharts() {
         cutout: '65%'
       }
     });
-  }
+    }
 
-  const cashCtx = document.getElementById('cashflowChart');
-  if (cashCtx) {
+    const cashCtx = document.getElementById('cashflowChart');
+    if (!cashCtx || reportCharts.cashflow) return;
     // 25-year cumulative savings curve; visually anchored to the 15L/20L/25L
     // milestones shown beneath the chart.
     const years = Array.from({ length: 25 }, (_, i) => `Yr ${i + 1}`);
@@ -373,7 +403,7 @@ function initCharts() {
     });
 
     prepareCanvas(cashCtx);
-    new Chart(cashCtx, {
+    reportCharts.cashflow = new Chart(cashCtx, {
       type: 'line',
       data: {
         labels: years,
@@ -411,7 +441,20 @@ function initCharts() {
         }
       }
     });
-  }
+  };
+
+  const initTabCharts = (tab) => {
+    if (tab === 'generation') initGenerationChart();
+    if (tab === 'financial') initFinancialCharts();
+  };
+
+  initTabCharts(document.querySelector('.tab-btn.active')?.dataset.tab);
+  window.addEventListener('solar-report-tab-change', (event) => {
+    initTabCharts(event.detail.tab);
+    requestAnimationFrame(() => {
+      Object.values(reportCharts).forEach((chart) => chart.resize());
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

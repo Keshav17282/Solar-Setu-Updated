@@ -100,7 +100,29 @@ class UserLocation(db.Model):
 
         annual_generation = normalize_annual_generation_kwh(self.annual_generation)
 
-        return {
+        battery_kwh = float(self.battery_kwh or 0)
+        extras = self.extras or {}
+        battery_technology = (
+            extras.get("battery_technology")
+            or (extras.get("battery_recommendation") or {}).get("technology")
+            or "lfp"
+        )
+        from app.services.battery_service import battery_cost
+        battery_pricing = battery_cost(battery_kwh, battery_technology)
+        extras = dict(extras)
+        if battery_kwh > 0 and not extras.get("battery_recommendation"):
+            extras["battery_recommendation"] = {
+                "recommended_kwh": battery_kwh,
+                "technology": battery_technology,
+                "source": "legacy_saved_report",
+                "provisional": True,
+                "assumption_note": (
+                    "Legacy saved battery capacity retained because load and backup duration "
+                    "were not stored for this report."
+                ),
+            }
+
+        data = {
             "id": self.id,
             "user_id": self.user_id,
             "address": self.address,
@@ -125,16 +147,21 @@ class UserLocation(db.Model):
             "orientation_factor": self.orientation_factor,
             "recommended_tilt_deg": self.recommended_tilt_deg,
             "battery_kwh": self.battery_kwh or 0,
-            "battery_cost": round(self.battery_cost or 0, 2),
+            "battery_cost": round(float(battery_pricing["estimated_cost"] or 0), 2),
+            "battery_cost_min": battery_pricing["minimum_cost"],
+            "battery_cost_max": battery_pricing["maximum_cost"],
+            "battery_pricing": battery_pricing,
             "specific_yield": self.specific_yield,
             "capacity_factor": self.capacity_factor,
             "lcoe": self.lcoe,
             "lifetime_kwh": self.lifetime_kwh,
             "self_consumption_frac": self.self_consumption_frac,
             "payback_years": self.payback_years,
-            "extras": self.extras,
+            "extras": extras,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+        from app.services.subsidy_service import enrich_saved_report_financials
+        return enrich_saved_report_financials(data)
 
 
 class User(db.Model):
@@ -195,6 +222,94 @@ class SolarSolution(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
 
+class SolarCompany(db.Model):
+    __tablename__ = "solar_companies"
+    __table_args__ = (
+        db.UniqueConstraint("vendor_code", name="uq_solar_companies_vendor_code"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(240), nullable=False, index=True)
+    vendor_code = db.Column(db.String(64), nullable=True)
+    phone = db.Column(db.String(32), nullable=True)
+    email = db.Column(db.String(320), nullable=True)
+    district = db.Column(db.String(128), nullable=True, index=True)
+    address = db.Column(db.Text, nullable=True)
+    website = db.Column(db.String(512), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    verification_status = db.Column(db.String(32), nullable=False, default="directory-listed", index=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    source_url = db.Column(db.String(512), nullable=True)
+    directory_approved_at = db.Column(db.DateTime, nullable=True)
+    last_verified_at = db.Column(db.DateTime, nullable=True)
+    manually_verified = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    service_areas = db.relationship("CompanyServiceArea", back_populates="company", cascade="all, delete-orphan")
+    products = db.relationship("CompanyProduct", back_populates="company", cascade="all, delete-orphan")
+    verifications = db.relationship("CompanyVerification", back_populates="company", cascade="all, delete-orphan")
+
+
+class CompanyServiceArea(db.Model):
+    __tablename__ = "company_service_areas"
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("solar_companies.id"), nullable=False, index=True)
+    district = db.Column(db.String(128), nullable=False)
+    state = db.Column(db.String(128), nullable=False, default="Uttar Pradesh")
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    source_url = db.Column(db.String(512), nullable=True)
+    company = db.relationship("SolarCompany", back_populates="service_areas")
+
+
+class CompanyProduct(db.Model):
+    __tablename__ = "company_products"
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("solar_companies.id"), nullable=False, index=True)
+    category = db.Column(db.String(64), nullable=False)
+    brand = db.Column(db.String(160), nullable=True)
+    model = db.Column(db.String(160), nullable=True)
+    technology = db.Column(db.String(120), nullable=True)
+    specifications = db.Column(db.JSON, nullable=True)
+    product_warranty_years = db.Column(db.Float, nullable=True)
+    performance_warranty_years = db.Column(db.Float, nullable=True)
+    source_url = db.Column(db.String(512), nullable=True)
+    last_verified_at = db.Column(db.DateTime, nullable=True)
+    company = db.relationship("SolarCompany", back_populates="products")
+
+
+class CompanyVerification(db.Model):
+    __tablename__ = "company_verifications"
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("solar_companies.id"), nullable=False, index=True)
+    source = db.Column(db.String(64), nullable=False)
+    source_url = db.Column(db.String(512), nullable=False)
+    status = db.Column(db.String(32), nullable=False, default="listed")
+    source_record_id = db.Column(db.String(128), nullable=True)
+    fetched_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    notes = db.Column(db.Text, nullable=True)
+    company = db.relationship("SolarCompany", back_populates="verifications")
+
+
+class QuotationRequest(db.Model):
+    __tablename__ = "quotation_requests"
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("solar_companies.id"), nullable=False, index=True)
+    customer_name = db.Column(db.String(160), nullable=False)
+    mobile = db.Column(db.String(32), nullable=False)
+    email = db.Column(db.String(320), nullable=True)
+    installation_address = db.Column(db.Text, nullable=False)
+    district = db.Column(db.String(128), nullable=True)
+    system_size_kw = db.Column(db.Float, nullable=True)
+    battery_required = db.Column(db.Boolean, nullable=False, default=False)
+    monthly_bill = db.Column(db.Float, nullable=True)
+    preferred_timeline = db.Column(db.String(64), nullable=True)
+    status = db.Column(db.String(32), nullable=False, default="new")
+    contact_status = db.Column(db.String(32), nullable=False, default="not_contacted")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    company = db.relationship("SolarCompany")
+
+
 class SavedComparison(db.Model):
     __tablename__ = "saved_comparisons"
 
@@ -207,30 +322,103 @@ class SavedComparison(db.Model):
 
 
 def seed_solar_solutions():
-    """Seed a small, replaceable prototype catalogue with honest provenance."""
+    """Remove legacy prototype providers instead of presenting fictional firms."""
     if SolarProvider.query.count() or SolarSolution.query.count():
+        SolarSolution.query.filter(
+            SolarSolution.provider.has(
+                SolarProvider.name.in_(["SunGrid India", "HelioWorks", "BrightRoof Energy"])
+            )
+        ).delete(synchronize_session=False)
+        SolarProvider.query.filter(
+            SolarProvider.name.in_(["SunGrid India", "HelioWorks", "BrightRoof Energy"])
+        ).delete(synchronize_session=False)
+        db.session.commit()
         return
-    from datetime import date
 
-    records = [
-        ("SunGrid India", "Indicative residential rooftop package catalogue for prototype comparison.", ["Delhi", "Haryana", "Punjab", "Rajasthan", "Uttar Pradesh"], "EPC", 5.0, "Waaree", "540 W module", "Mono PERC", 20.5, 10, "Solis", "S5-GR3P", "String", 12, 25, 10, True, True, True, True, 285000, 335000),
-        ("HelioWorks", "Indicative rooftop package catalogue; verify serviceability before procurement.", ["Delhi", "Maharashtra", "Gujarat", "Karnataka", "Tamil Nadu"], "Installer network", 5.5, "Adani Solar", "TOPCon 550 W", "TOPCon", 22.1, 10, "GoodWe", "XS", "String", 12, 30, 10, True, True, True, True, 315000, 375000),
-        ("BrightRoof Energy", "Indicative solution record for an India-wide availability check.", [], "Marketplace listing", 6.0, "Vikram Solar", "Suryavajra 550 W", "Mono PERC", 21.3, 11, "Growatt", "MIN 6000TL", "String", 12, 25, 10, None, None, True, False, 300000, 360000),
+
+def seed_real_installers():
+    """Import UPNEDA records once, then add official national-brand profiles."""
+    from pathlib import Path
+    from app.services.installer_importer import UPNEDA_URL, approved_datetime, read_csv
+
+    now = datetime.utcnow()
+    if not SolarCompany.query.count():
+        csv_path = Path(__file__).resolve().parent / "data" / "upneda_approved_firms.csv"
+        if csv_path.exists():
+            seen = set()
+            added = 0
+            for record in read_csv(csv_path):
+                vendor_code = record["vendor_code"].strip().upper()
+                if vendor_code in seen:
+                    continue
+                seen.add(vendor_code)
+                company = SolarCompany(
+                    name=record["name"].strip(),
+                    vendor_code=vendor_code,
+                    phone=record.get("phone"),
+                    email=record.get("email"),
+                    district=record.get("district"),
+                    address=record.get("address"),
+                    verification_status="directory-listed",
+                    active=True,
+                    source_url=UPNEDA_URL,
+                    directory_approved_at=approved_datetime(record.get("approved_at")),
+                    last_verified_at=now,
+                )
+                company.service_areas.append(CompanyServiceArea(
+                    district=record.get("district") or "Uttar Pradesh",
+                    state="Uttar Pradesh",
+                    source_url=UPNEDA_URL,
+                ))
+                company.verifications.append(CompanyVerification(
+                    source="UPNEDA",
+                    source_url=UPNEDA_URL,
+                    status="listed",
+                    source_record_id=vendor_code,
+                    fetched_at=now,
+                    notes="Imported from the controlled UPNEDA approved-firms directory snapshot.",
+                ))
+                db.session.add(company)
+                added += 1
+                if added % 500 == 0:
+                    db.session.flush()
+
+    official_profiles = [
+        {
+            "name": "Tata Power Solar Systems Limited",
+            "website": "https://www.tatapowersolar.com/",
+            "description": "Official national solar company. Rooftop EPC and local installer availability in your district require current verification.",
+            "source_url": "https://www.tatapowersolar.com/",
+        },
+        {
+            "name": "Adani Solar",
+            "website": "https://adanisolar.com/",
+            "description": "Official solar module manufacturer. Installation requires a separate EPC installer and local service availability confirmation.",
+            "source_url": "https://adanisolar.com/",
+        },
     ]
-    for name, description, regions, provider_type, size, brand, model, panel_type, efficiency, panels, inverter_brand, inverter_model, inverter_type, panel_warranty, performance_warranty, inverter_warranty, installation, mounting, amc, financing, price_min, price_max in records:
-        provider = SolarProvider(name=name, description=description, service_regions=regions, provider_type=provider_type)
-        provider.solutions.append(SolarSolution(
-            system_size_kw=size, panel_brand=brand, panel_model=model, panel_type=panel_type,
-            panel_efficiency=efficiency, number_of_panels=panels, inverter_brand=inverter_brand,
-            inverter_model=inverter_model, inverter_type=inverter_type,
-            panel_warranty_years=panel_warranty, performance_warranty_years=performance_warranty,
-            inverter_warranty_years=inverter_warranty, installation_included=installation,
-            mounting_included=mounting, amc_available=amc, financing_available=financing,
-            indicative_price_min=price_min, indicative_price_max=price_max, data_status="INDICATIVE",
-            source="Solar Setu SIH prototype catalogue (manually curated; provider verification required)",
-            last_updated=date(2026, 9, 1),
+    for profile in official_profiles:
+        company = SolarCompany.query.filter(db.func.lower(SolarCompany.name) == profile["name"].lower()).first()
+        if company:
+            continue
+        company = SolarCompany(
+            name=profile["name"],
+            website=profile["website"],
+            description=profile["description"],
+            verification_status="official-source",
+            active=True,
+            source_url=profile["source_url"],
+            last_verified_at=now,
+            manually_verified=True,
+        )
+        company.verifications.append(CompanyVerification(
+            source="Official company website",
+            source_url=profile["source_url"],
+            status="official-source",
+            fetched_at=now,
+            notes="Official national brand profile. Installer authorization and service coverage are not inferred.",
         ))
-        db.session.add(provider)
+        db.session.add(company)
     db.session.commit()
 
 

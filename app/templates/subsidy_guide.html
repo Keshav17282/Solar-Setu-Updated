@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}PM Surya Ghar Subsidy Guide — Solar Setu{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/subsidy.css', v='20261102-1') }}">
+{% endblock %}
+{% block content %}
+<div class="subsidy-guide-page">
+<section class="subsidy-hero">
+  <div>
+    <span class="subsidy-eyebrow">PM SURYA GHAR · OFFICIAL PROGRAM GUIDE</span>
+    <h1>Understand Your Solar Subsidy.</h1>
+    <p>Explore government support, estimate eligible subsidy and understand how to apply for rooftop solar under PM Surya Ghar.</p>
+    <div class="subsidy-hero-actions">
+      <a class="subsidy-button subsidy-button-primary" href="{{ subsidy_config.official_links.national_portal }}" target="_blank" rel="noopener noreferrer">Open official application portal <span>↗</span></a>
+      <a class="subsidy-button subsidy-button-secondary" href="#subsidy-calculator">Calculate subsidy</a>
+    </div>
+  </div>
+  <div class="subsidy-hero-stats" aria-label="Subsidy highlights">
+    <article><small>CENTRAL SUPPORT</small><strong>₹78,000</strong><span>maximum central CFA</span></article>
+    <article><small>UP ADDITIONAL</small><strong>₹30,000</strong><span>conditional state support</span></article>
+  </div>
+</section>
+
+<section class="subsidy-section" id="subsidy-calculator">
+  <div class="subsidy-section-heading"><span>INTERACTIVE ESTIMATE</span><h2>Calculate your indicative subsidy</h2><p>Choose your installation details to see central assistance and any configured state support.</p></div>
+  <div class="subsidy-calculator-grid">
+    <form class="subsidy-calculator-form" id="subsidy-calculator-form">
+      <label for="subsidy-state">State</label>
+      <select id="subsidy-state" name="state" required>{% for state in subsidy_config.state_options %}<option value="{{ state }}" {% if state == "Uttar Pradesh" %}selected{% endif %}>{{ state }}</option>{% endfor %}</select>
+      <label for="subsidy-capacity">System capacity (kW)</label>
+      <div class="capacity-options" aria-label="Quick capacity choices">{% for capacity in [1,2,3,4,5] %}<button type="button" data-capacity="{{ capacity }}">{{ capacity }} kW</button>{% endfor %}</div>
+      <input id="subsidy-capacity" name="capacity" type="number" min="0.1" max="10" step="0.1" value="3" required>
+      <label for="subsidy-category">System category</label>
+      <select id="subsidy-category" name="category"><option value="residential">Residential grid-connected</option><option value="commercial">Commercial</option><option value="industrial">Industrial</option></select>
+      <label for="subsidy-configuration">System configuration</label>
+      <select id="subsidy-configuration" name="configuration"><option value="on-grid">On-grid</option><option value="hybrid">Hybrid</option><option value="off-grid">Off-grid</option></select>
+      <button class="subsidy-button subsidy-button-primary subsidy-submit" type="submit">Calculate estimate</button>
+    </form>
+    <div class="subsidy-result" id="subsidy-result" aria-live="polite">
+      <span class="result-label">INDICATIVE RESULT</span>
+      <div class="result-status" id="result-status">Residential grid-connected systems may qualify</div>
+      <div class="result-grid">
+        <article><span>Central subsidy</span><strong id="central-result">₹78,000</strong></article>
+        <article><span>UP additional</span><strong id="state-result">₹30,000</strong></article>
+        <article><span>Indicative combined</span><strong id="combined-result">₹108,000</strong></article>
+        <article><span>Final estimate subject to approval</span><strong id="final-result">₹108,000</strong></article>
+      </div>
+      <p id="result-explanation">Residential grid-connected systems may qualify for central CFA, subject to official approval.</p>
+      <p class="result-warning" id="result-warning">Additional Uttar Pradesh subsidy — subject to current scheme availability, eligibility, allocation and official verification.</p>
+      <p class="result-error" id="result-error" hidden></p>
+    </div>
+  </div>
+</section>
+
+<section class="subsidy-section">
+  <div class="subsidy-section-heading"><span>QUICK REFERENCE</span><h2>Central and Uttar Pradesh subsidy rates</h2></div>
+  <div class="subsidy-table-wrap"><table><thead><tr><th>System capacity</th><th>Central amount</th><th>UP additional*</th><th>Indicative combined*</th></tr></thead><tbody>{% for row in subsidy_table %}<tr><td>{{ row.capacity }} kW</td><td>₹{{ "{:,.0f}".format(row.central) }}</td><td>₹{{ "{:,.0f}".format(row.up_additional) }}</td><td>₹{{ "{:,.0f}".format(row.combined) }}</td></tr>{% endfor %}</tbody></table></div>
+  <p class="subsidy-footnote">* Additional Uttar Pradesh subsidy — subject to current scheme availability, eligibility, allocation and official verification.</p>
+</section>
+
+<section class="subsidy-section subsidy-info-grid">
+  <article><span>ELIGIBILITY</span><h2>Who should check this scheme?</h2><ul><li>Eligible residential electricity consumers</li><li>Residential grid-connected rooftop solar</li><li>An eligible electricity connection and applicable DISCOM process</li><li>Approved vendor, technical, metering and commissioning requirements</li><li>Applicable DCR and module requirements</li></ul><p>Final eligibility and disbursement are determined by the official scheme and authorities.</p></article>
+  <article><span>DOCUMENTS</span><h2>Prepare these items</h2><ul><li>Latest electricity bill and consumer account details</li><li>Registered mobile number</li><li>Applicant and consumer information</li><li>Bank account details</li><li>Cancelled cheque or passbook details, where required</li><li>Installation and commissioning details</li><li>Any documents requested by the portal or DISCOM</li></ul><p>Final requirements depend on the official portal workflow.</p></article>
+</section>
+
+<section class="subsidy-section">
+  <div class="subsidy-section-heading"><span>APPLICATION JOURNEY</span><h2>Six steps from registration to processing</h2></div>
+  <div class="subsidy-timeline">{% set steps=["Register on the PM Surya Ghar national portal.","Enter your state, DISCOM and electricity consumer details.","Submit the rooftop solar application and proposed capacity.","Wait for feasibility approval and follow the approved process.","Install through an eligible registered vendor and complete net-metering, inspection and commissioning.","Submit required bank details and documents for CFA processing."] %}{% for step in steps %}<article><b>{{ "%02d"|format(loop.index) }}</b><p>{{ step }}</p></article>{% endfor %}</div>
+  <p class="subsidy-disclaimer">Solar Setu provides guidance and estimates; the official government portal handles the actual application and subsidy approval.</p>
+</section>
+
+<section class="subsidy-section">
+  <div class="subsidy-section-heading"><span>OFFICIAL RESOURCES</span><h2>Verify details at trusted government sources</h2></div>
+  <div class="resource-grid">
+    <a href="{{ subsidy_config.official_links.national_portal }}" target="_blank" rel="noopener noreferrer"><b>PM Surya Ghar portal</b><span>Applications and official guidance ↗</span></a>
+    <a href="{{ subsidy_config.official_links.upneda }}" target="_blank" rel="noopener noreferrer"><b>UPNEDA official website</b><span>Uttar Pradesh scheme information ↗</span></a>
+    <a href="{{ subsidy_config.official_links.mnre }}" target="_blank" rel="noopener noreferrer"><b>MNRE official website</b><span>National ministry information ↗</span></a>
+    <a href="{{ subsidy_config.official_links.upneda_booklet }}" target="_blank" rel="noopener noreferrer"><b>UPNEDA PM Surya Ghar booklet</b><span>Published scheme material ↗</span></a>
+    <a href="{{ subsidy_config.official_links.upneda_flyer }}" target="_blank" rel="noopener noreferrer"><b>UPNEDA published subsidy flyer</b><span>Published state subsidy flyer ↗</span></a>
+    <a href="{{ subsidy_config.official_links.mnre_guidelines }}" target="_blank" rel="noopener noreferrer"><b>MNRE CFA operational guidelines</b><span>Central scheme rules ↗</span></a>
+  </div>
+  <p class="subsidy-contact">UPNEDA published helpline: <strong>155243</strong>, Monday–Saturday, 9:00 AM–6:30 PM. Verify current contact details on the UPNEDA website.</p>
+</section>
+
+<section class="subsidy-section subsidy-faq">
+  <div class="subsidy-section-heading"><span>FAQ</span><h2>Common subsidy questions</h2></div>
+  <details><summary>How much central subsidy is available for a 1 kW system?</summary><p>₹30,000 under the published central CFA structure. Final approval depends on eligibility and the official process.</p></details>
+  <details><summary>What is the maximum central subsidy?</summary><p>The published central CFA cap is ₹78,000.</p></details>
+  <details><summary>Does Uttar Pradesh offer additional subsidy?</summary><p>The published UPNEDA material indicates additional support, subject to current availability and verification.</p></details>
+  <details><summary>Is the UP amount guaranteed?</summary><p>No. The additional amount is conditional and must be verified through current official scheme information.</p></details>
+  <details><summary>Can commercial buildings receive residential PM Surya Ghar subsidy?</summary><p>No automatic residential CFA eligibility applies to commercial or industrial systems.</p></details>
+  <details><summary>Are off-grid and hybrid systems eligible?</summary><p>Neither is automatically eligible. Eligibility must be verified against the latest official portal rules.</p></details>
+  <details><summary>Where do I apply and when is subsidy released?</summary><p>Apply on the PM Surya Ghar national portal. Disbursement timing and release depend on approval, feasibility, installation, commissioning and document verification.</p></details>
+  <details><summary>Can I apply through Solar Setu?</summary><p>No. Solar Setu provides guidance and estimates; applications and approvals remain with the official government portal and authorities.</p></details>
+</section>
+</div>
+<script src="{{ url_for('static', filename='js/subsidy.js', v='20261102-1') }}" defer></script>
+{% endblock %}

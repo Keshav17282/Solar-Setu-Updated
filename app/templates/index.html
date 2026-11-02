@@ -2,44 +2,58 @@
 {% block title %}Solar Setu — Estimates{% endblock %}
 
 {% block content %}
-<!-- ========== HERO (Improved) ========== -->
-<section class="hero-row">
-  <div class="hero-copy">
-    <span class="eyebrow"><span class="eyebrow-dot"></span> SOLAR INTELLIGENCE PLATFORM</span>
-    <h1>Turn your rooftop<br><span class="grad-text">into clean energy.</span></h1>
-    <p class="subtitle">Get a free, accurate solar estimate in under 2 minutes — system size, savings, subsidy and payback, all in one guided flow.</p>
-    
+<section class="home-hero">
+  <div class="home-hero-content">
+    <span class="home-kicker">ROOFTOP SOLAR PLANNING FOR INDIA</span>
+    <h1>Your roof.<br><em>Your solar potential.</em></h1>
+    <p>Plan a smarter solar system, estimate savings and understand the right next step for your home or business.</p>
     <div class="hero-actions">
-      <a class="btn-primary" href="#search-panel">Start free rooftop analysis <span aria-hidden="true">→</span></a>
-      <a class="btn-ghost" href="#why-solar">See how it works <span aria-hidden="true">↓</span></a>
+      <a class="button button-primary" href="#search-panel">Explore your solar potential <span>→</span></a>
+      <a class="button button-glass" href="#how-it-works">See how it works</a>
     </div>
-
-    <!-- Trust signals under CTAs -->
-    <div class="hero-trust">
-      <span class="hero-trust-item">⏱ Takes ~2 min</span>
-      <span class="hero-trust-item">🏛 PM Surya Ghar ready</span>
-      <span class="hero-trust-item">✓ Free estimate</span>
-    </div>
+    <div class="home-hero-trust"><span>Free rooftop estimate</span><span>No-obligation planning</span><span>Built for India</span></div>
   </div>
-
-  <div class="hero-art" aria-hidden="true">
-    <div class="hero-sun">☼</div>
-    <div class="hero-roof">
-      <span class="panel panel-a"></span><span class="panel panel-b"></span><span class="panel panel-c"></span>
-      <span class="panel panel-d"></span><span class="panel panel-e"></span><span class="panel panel-f"></span>
-    </div>
-    <div class="hero-energy"><span>ENERGY</span><strong>+ savings</strong></div>
-    <div class="hero-art-line"></div>
+  <div class="hero-feature-pills" aria-label="Solar planning capabilities">
+    <span><small>01</small><strong>3D roof planning</strong></span>
+    <span><small>02</small><strong>Savings estimate</strong></span>
+    <span><small>03</small><strong>Detailed reports</strong></span>
   </div>
 </section>
 
-<!-- Trust strip -->
-<div class="trust-strip" aria-label="Solar Setu capabilities">
-  <span><b>01</b> Satellite mapping</span>
-  <span><b>02</b> Smart sizing</span>
-  <span><b>03</b> Financial clarity</span>
-  <span><b>04</b> Impact insights</span>
-</div>
+<section class="impact-strip" aria-label="Solar Setu impact">
+  <div><small>QUICK START</small><strong>2 min</strong><span>guided rooftop estimate</span></div>
+  <div><small>ALL-IN-ONE</small><strong>3-in-1</strong><span>generation, cost &amp; savings view</span></div>
+  <div><small>SUBSIDY GUIDE</small><strong>₹78k</strong><span>indicative subsidy cap</span></div>
+  <div><small>ONE CLEAR PLAN</small><strong>One roof</strong><span>for a clearer energy decision</span></div>
+</section>
+
+<section class="content-section solutions-section" id="solutions">
+  <div class="section-heading centered"><span class="section-kicker">SOLAR, BUILT AROUND YOU</span><h2>Power every kind of rooftop.</h2><p>Start with the energy use and space you have. Solar Setu turns them into a practical solar plan.</p></div>
+  <div class="solution-grid">
+    <article class="solution-card solution-residential">
+      <div class="solution-image" role="img" aria-label="Modern home with rooftop solar panels"><span>Homes &amp; villas</span><strong>01</strong></div>
+      <div><span>01 · RESIDENTIAL</span><h3>Make home energy independent.</h3><p>Right-size your system, understand subsidy support and estimate monthly bill savings.</p><a href="#search-panel">Plan my rooftop <span>→</span></a></div>
+    </article>
+    <article class="solution-card solution-commercial">
+      <div class="solution-image" role="img" aria-label="Commercial building with rooftop solar installation"><span>Offices &amp; campuses</span><strong>02</strong></div>
+      <div><span>02 · COMMERCIAL</span><h3>Turn operational space into returns.</h3><p>Compare system options and use clear financial signals for offices, campuses and facilities.</p><a href="{{ url_for('routes.compare') }}">Compare solutions <span>→</span></a></div>
+    </article>
+    <article class="solution-card solution-industrial">
+      <div class="solution-image" role="img" aria-label="Large industrial facility with rooftop solar panels"><span>Factories &amp; warehouses</span><strong>03</strong></div>
+      <div><span>03 · INDUSTRIAL</span><h3>Make large roofs work harder.</h3><p>Explore scalable solar planning for factories, warehouses and high-consumption sites.</p><a href="#search-panel">Explore rooftop options <span>→</span></a></div>
+    </article>
+  </div>
+</section>
+
+<section class="content-section how-section" id="how-it-works">
+  <div class="section-heading centered"><span class="section-kicker">A SIMPLE, SMART JOURNEY</span><h2>From rooftop to clear decision.</h2></div>
+  <div class="how-grid">
+    <article><span class="step-number">01</span><div class="step-visual map-visual"><span>Draw your rooftop</span></div><h3>Map your roof</h3><p>Search an address or pin your location, then draw the usable rooftop boundary.</p></article>
+    <article><span class="step-number">02</span><div class="step-visual estimate-visual"><span>Estimate system size</span></div><h3>Shape the estimate</h3><p>Choose energy use, system preferences and backup needs for a tailored model.</p></article>
+    <article><span class="step-number">03</span><div class="step-visual compare-visual"><span>Compare the best fit</span></div><h3>Compare providers</h3><p>Review compatible solutions, indicative pricing, warranties and financial fit.</p></article>
+    <article><span class="step-number">04</span><div class="step-visual report-visual"><span>Save your solar plan</span></div><h3>Move with confidence</h3><p>Save reports, explore savings and ask Surya before speaking with an installer.</p></article>
+  </div>
+</section>
 
 <!-- ========== STEP 01 / LOCATION (Improved) ========== -->
 <section class="search-panel" id="search-panel">
@@ -56,6 +70,9 @@
     <span class="input-icon" aria-hidden="true">⌖</span>
     <input type="text" id="address-search" placeholder="Search place, society, college or full address" autocomplete="street-address">
     <button id="search-btn" type="button">Find rooftop <span aria-hidden="true">→</span></button>
+    <button class="surya-search-launcher" type="button" data-surya-launcher aria-controls="surya-panel" aria-expanded="false">
+      <span aria-hidden="true">✦</span> Ask Surya <small>AI</small>
+    </button>
     <button id="locate-btn" type="button" title="Use current location" aria-label="Use current location">⌖</button>
   </div>
 
@@ -68,9 +85,11 @@
   <p class="search-helper">Tip: After selecting location, scroll down and draw your rooftop boundary on the map.</p>
   <div id="search-results" class="search-results"></div>
 </section>
+<script>document.body.classList.add('has-inline-surya');</script>
 
 <section class="cta-banner">
   <div>
+    <span class="cta-editorial-index">EXPLORE YOUR ROOF</span>
     <p class="cta-label">A clear path from rooftop to results</p>
     <p class="cta-big">Measure. <span>Model.</span> Save.</p>
     <a class="btn-grad" href="#map-section">Continue to rooftop analysis <span aria-hidden="true">→</span></a>
@@ -83,28 +102,28 @@
   <p class="section-lead">The signals that make a rooftop decision easier.</p>
   <div class="why-grid">
     <div class="why-card">
-      <span class="icon-chip purple">₹</span>
+      <span class="why-visual why-savings" aria-hidden="true"><small>SAVE</small></span>
       <div>
         <span class="value">Save up to 90%</span>
         <span class="label">on electricity bills</span>
       </div>
     </div>
     <div class="why-card">
-      <span class="icon-chip orange">⏱</span>
+      <span class="why-visual why-payback" aria-hidden="true"><small>PAYBACK</small></span>
       <div>
         <span class="value orange">3–4 Years</span>
         <span class="label">Payback on investment</span>
       </div>
     </div>
     <div class="why-card">
-      <span class="icon-chip purple">🏛</span>
+      <span class="why-visual why-subsidy" aria-hidden="true"><small>SUBSIDY</small></span>
       <div>
         <span class="value">₹30,000 – ₹78,000</span>
         <span class="label">PM Surya Ghar subsidy</span>
       </div>
     </div>
     <div class="why-card">
-      <span class="icon-chip green">🌿</span>
+      <span class="why-visual why-carbon" aria-hidden="true"><small>CARBON</small></span>
       <div>
         <span class="value green">{% if grid_emission_factor_tco2_per_mwh is not none %}{{ '{:.4f}'.format(grid_emission_factor_tco2_per_mwh) }} tCO₂/MWh{% else %}Not available{% endif %}</span>
         <span class="label">Illustrative CEA grid-average factor</span>
@@ -112,7 +131,7 @@
     </div>
     {% if estimated_annual_co2_avoided_tonnes is defined and estimated_annual_co2_avoided_tonnes is not none %}
     <div class="why-card">
-      <span class="icon-chip green">🌿</span>
+      <span class="why-visual why-carbon" aria-hidden="true"><small>IMPACT</small></span>
       <div>
         <span class="value green">{{ '{:,.2f}'.format(estimated_annual_co2_avoided_tonnes) }} tCO₂/year</span>
         <span class="label">Estimated annual CO₂ avoided</span>
@@ -227,14 +246,20 @@
         Include battery storage
       </label>
       <div id="battery-size-wrap" class="battery-size-wrap hidden">
-        <label for="battery-size">Battery capacity</label>
-        <select id="battery-size">
-          <option value="5">5 kWh (small home)</option>
-          <option value="10" selected>10 kWh (recommended)</option>
-          <option value="15">15 kWh</option>
-          <option value="20">20 kWh (larger home)</option>
+        <label for="essential-load">Essential load (kW)</label>
+        <input id="essential-load" type="number" min="0.1" step="0.1" inputmode="decimal"
+               placeholder="e.g. 1.0">
+        <label for="backup-hours">Required backup duration (hours)</label>
+        <input id="backup-hours" type="number" min="1" step="0.5" inputmode="decimal"
+               placeholder="e.g. 5">
+        <label for="battery-technology">Battery technology</label>
+        <select id="battery-technology">
+          <option value="lfp" selected>LFP (Lithium iron phosphate)</option>
+          <option value="nmc">NMC</option>
+          <option value="lead-acid">Lead-acid</option>
         </select>
-        <small>~₹9,000 per kWh (LFP). Improves self-consumption &amp; backup.</small>
+        <small>Capacity is calculated from your backup load and duration. Indicative installed LFP pricing is ₹15,000–₹19,000/kWh; it is a market estimate, not an official government rate.</small>
+        <div id="battery-recommendation" aria-live="polite"></div>
       </div>
     </div>
   </div>
@@ -248,6 +273,67 @@
   <span class="loading-spinner" aria-hidden="true"></span>
   <div><strong>Analyzing your rooftop…</strong><p>Crunching irradiance, orientation and storage options.</p></div>
 </section>
+
+<section class="feature-showcase savings-showcase">
+  <div class="showcase-copy">
+    <span class="section-kicker">SOLAR SAVINGS</span>
+    <h2>Know what sunlight could save.</h2>
+    <p>Turn generation, tariff and system assumptions into a clear monthly and long-term savings view.</p>
+    <ul><li>Annual generation outlook</li><li>Bill and payback signals</li><li>Editable subsidy planning</li></ul>
+    <a class="text-link" href="{{ url_for('routes.savings') }}">Explore savings <span>→</span></a>
+  </div>
+  <div class="savings-dashboard-preview" aria-label="Solar savings dashboard preview">
+    <div class="preview-status"><span></span> Live estimate preview</div>
+    <div class="preview-top"><span>Estimated annual savings</span><strong>₹ 42,800</strong></div>
+    <div class="preview-chart"><i style="height:38%"></i><i style="height:52%"></i><i style="height:47%"></i><i style="height:68%"></i><i style="height:76%"></i><i style="height:88%"></i><i style="height:94%"></i></div>
+    <div class="preview-metrics"><span><small>Payback</small><strong>4.2 yr</strong></span><span><small>25-year value</small><strong>₹12.4L</strong></span></div>
+  </div>
+</section>
+
+<section class="feature-showcase roof-showcase">
+  <div class="roof-preview">
+    <div class="roof-surface">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+      <i class="roof-marker"></i>
+    </div>
+    <div class="roof-preview-label"><small>ROOFTOP POTENTIAL</small><strong>8.4 kW usable</strong></div>
+  </div>
+  <div class="showcase-copy">
+    <span class="section-kicker">ROOF INTELLIGENCE</span>
+    <h2>See the opportunity in your roof.</h2>
+    <p>Map the boundary, exclude obstructions and let Solar Setu estimate usable capacity and system size.</p>
+    <a class="text-link" href="#map-section">Model my rooftop <span>→</span></a>
+  </div>
+</section>
+
+<section class="feature-showcase comparison-showcase">
+  <div class="showcase-copy">
+    <span class="section-kicker">COMPARE WITH CLARITY</span>
+    <h2>Not just quotes. Better context.</h2>
+    <p>Compare solar solutions against your analysis with transparent pricing assumptions, warranties and recommended fit.</p>
+    <a class="button button-dark" href="{{ url_for('routes.compare') }}">View comparisons <span>→</span></a>
+  </div>
+  <div class="provider-preview">
+    <article><span class="provider-rank">01</span><div><strong>Balanced performance</strong><small>Efficiency · Warranty · Value</small></div><em>92% fit</em><b>Best match</b></article>
+    <article><span class="provider-rank">02</span><div><strong>Maximum efficiency</strong><small>Higher output · Premium equipment</small></div><em>88% fit</em><b>Performance</b></article>
+    <article><span class="provider-rank">03</span><div><strong>Strong value</strong><small>Warranty · Payback · Availability</small></div><em>84% fit</em><b>Value</b></article>
+  </div>
+</section>
+
+<section class="surya-showcase" id="surya-showcase">
+  <div class="surya-orb" aria-hidden="true"><span>☀</span></div>
+  <div><span class="section-kicker section-kicker-light">SURYA AI</span><h2>Ask the question behind the numbers.</h2><p>Understand your results, compare trade-offs and explore the next step in plain language.</p></div>
+  <button class="button button-sun" type="button" data-surya-launcher>Ask Surya <span>→</span></button>
+</section>
+
+<section class="final-cta">
+  <div>
+    <span class="section-kicker">YOUR ROOF HAS POTENTIAL</span>
+    <h2>Make your next energy move a clear one.</h2>
+    <p>Get a practical rooftop solar estimate in minutes.</p>
+  </div>
+  <div><a class="button button-primary" href="#search-panel">Explore my solar potential <span>→</span></a><a class="button button-outline" href="{{ url_for('routes.subsidy_guide') }}">Subsidy guide</a></div>
+</section>
 {% endblock %}
 
 {% block scripts %}
@@ -260,5 +346,5 @@
   const PARSE_MAPS_URL = "{{ url_for('routes.api_parse_maps_url') }}";
 </script>
 <script src="{{ url_for('static', filename='js/map.js', v='20260910-2') }}"></script>
-<script src="{{ url_for('static', filename='js/main.js', v='20260910-2') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v='20261102-5-battery') }}"></script>
 {% endblock %}

@@ -347,29 +347,15 @@ def calculate_subsidy(system_size_kw, inverter_type="on-grid", property_type="re
       • Off-grid → usually not eligible
       • Commercial / MSME / industrial → PM Surya Ghar residential subsidy generally N/A
     """
-    itype = (inverter_type or "on-grid").lower().replace(" ", "-")
-    prop = (property_type or "residential").lower()
+    from app.services.subsidy_service import central_subsidy
 
-    if itype in ("off-grid", "offgrid"):
+    normalized_type = str(inverter_type or "on-grid").lower().replace(" ", "-")
+    prop = str(property_type or "residential").lower()
+    if normalized_type in ("off-grid", "offgrid"):
         return 0.0
     if prop in ("commercial", "industrial", "msme", "factory", "agricultural"):
         return 0.0
-
-    size = max(0.0, float(system_size_kw or 0))
-    if size <= 0:
-        return 0.0
-
-    first2 = getattr(Config, "SUBSIDY_PER_KW_FIRST_2", 30000.0)
-    extra = getattr(Config, "SUBSIDY_EXTRA_2_TO_3", 18000.0)
-    cap = getattr(Config, "SUBSIDY_CAP", 78000.0)
-
-    if size <= 2.0:
-        amount = size * first2
-    elif size <= 3.0:
-        amount = 2.0 * first2 + (size - 2.0) * extra
-    else:
-        amount = 2.0 * first2 + extra  # = 78,000
-    return round(min(amount, cap), 2)
+    return central_subsidy(system_size_kw)
 
 
 def size_from_monthly_bill(monthly_bill_inr, tariff_per_kwh=None):
@@ -668,7 +654,7 @@ def resolve_orientation(orientation_input, coordinates):
 
 def calculate_financials(system_size_kw, annual_generation_kwh, tariff_per_kwh,
                          battery_kwh=0.0, inverter_type="on-grid",
-                         property_type="residential"):
+                         property_type="residential", battery_technology="lfp"):
     if isinstance(annual_generation_kwh, bool):
         raise ValueError("annual_generation_kwh must be a finite, non-negative number.")
     try:
@@ -698,12 +684,12 @@ def calculate_financials(system_size_kw, annual_generation_kwh, tariff_per_kwh,
         system_size_kw, inverter_type=inverter_type, property_type=property_type
     )
 
-    battery_cost = 0.0
-    battery_kwh = max(0.0, float(battery_kwh or 0))
-    if battery_kwh > 0:
-        battery_cost = round(battery_kwh * getattr(Config, "BATTERY_COST_PER_KWH", 9000), 2)
+    from app.services.battery_service import battery_cost
 
-    net_investment = round(max(system_cost + battery_cost - subsidy, 0), 2)
+    battery_pricing = battery_cost(battery_kwh, battery_technology)
+    battery_cost_value = float(battery_pricing["estimated_cost"] or 0)
+    battery_kwh = max(0.0, float(battery_kwh or 0))
+    net_investment = round(max(system_cost + battery_cost_value - subsidy, 0), 2)
     annual_om = round(system_cost * getattr(Config, "OM_PERCENT_PER_YEAR", 0.012), 2)
 
     # Without battery, assume ~55% of generation offsets bill (export/import mix).
@@ -748,7 +734,10 @@ def calculate_financials(system_size_kw, annual_generation_kwh, tariff_per_kwh,
         "system_cost_low": cost_low,
         "system_cost_high": cost_high,
         "cost_per_kw": unit_cost,
-        "battery_cost": battery_cost,
+        "battery_cost": battery_cost_value,
+        "battery_cost_min": battery_pricing["minimum_cost"],
+        "battery_cost_max": battery_pricing["maximum_cost"],
+        "battery_pricing": battery_pricing,
         "battery_kwh": battery_kwh,
         "subsidy_amount": subsidy,
         "net_investment": net_investment,
@@ -784,7 +773,9 @@ def run_full_estimation(latitude, longitude, coordinates, obstructions=None,
                          tariff_per_kwh=Config.DEFAULT_TARIFF,
                          orientation="auto", battery_kwh=0.0,
                          monthly_bill=None, property_type="residential",
-                         needs_backup=False, inverter_preference="auto"):
+                         needs_backup=False, inverter_preference="auto",
+                         essential_load_kw=None, backup_hours=None,
+                         battery_technology="lfp"):
     """End-to-end estimation pipeline used by the /api/estimate route.
 
     Sizing strategy:
@@ -797,6 +788,25 @@ def run_full_estimation(latitude, longitude, coordinates, obstructions=None,
     Inverter recommendation follows On-Grid / Hybrid / Off-Grid guidance
     based on backup need, battery, and property type.
     """
+    from app.services.battery_service import recommend_battery_capacity
+
+    if needs_backup and battery_kwh > 0:
+        battery_recommendation = recommend_battery_capacity(
+            needs_backup=True,
+            essential_load_kw=essential_load_kw,
+            backup_hours=backup_hours,
+            technology=battery_technology,
+        )
+        battery_kwh = battery_recommendation["recommended_kwh"]
+    elif not needs_backup and battery_kwh <= 0:
+        battery_recommendation = recommend_battery_capacity(needs_backup=False, technology=battery_technology)
+        battery_kwh = 0.0
+    else:
+        battery_recommendation = recommend_battery_capacity(
+            needs_backup=False, technology=battery_technology
+        )
+        battery_kwh = 0.0
+
     roof_area_sqm = calculate_polygon_area_sqm(coordinates)
     usable_area_sqm, obstructed_area_sqm = calculate_usable_area(roof_area_sqm, obstructions)
 
@@ -849,6 +859,7 @@ def run_full_estimation(latitude, longitude, coordinates, obstructions=None,
         battery_kwh=battery_kwh,
         inverter_type=inverter_type_key,
         property_type=property_type,
+        battery_technology=battery_technology,
     )
 
     result = {
@@ -880,6 +891,7 @@ def run_full_estimation(latitude, longitude, coordinates, obstructions=None,
             getattr(Config, "DAILY_UNITS_PER_KW_HIGH", 5.5),
         ],
         "dc_note": "System size is DC kWp. AC output depends on PR, irradiance and grid availability.",
+        "battery_recommendation": battery_recommendation,
         **financials,
     }
     if bill_sizing:

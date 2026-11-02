@@ -11,12 +11,11 @@ Required or supported variables:
 ```text
 DATABASE_URL=postgresql://username:password@host:5432/database_name
 SECRET_KEY=replace_with_a_long_random_value
-GEMINI_API_KEY=replace_with_your_gemini_api_key
-AI_PROVIDER=gemini
-AI_MODEL=gemini-2.0-flash
+GROQ_API_KEY=replace_with_your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-`AI_API_URL` is optional for an OpenAI-compatible provider. The application does not store AI credentials in the database.
+Surya uses the official Groq SDK. The application does not store AI credentials in the database.
 
 For local development without PostgreSQL, omit `DATABASE_URL`; the app uses the existing `solar_app.db` SQLite file. That fallback is not suitable for production.
 
@@ -76,9 +75,8 @@ Set these deployment variables:
 ```text
 DATABASE_URL=<managed PostgreSQL URL>
 SECRET_KEY=<strong random secret>
-GEMINI_API_KEY=<rotated Gemini key>
-AI_PROVIDER=gemini
-AI_MODEL=gemini-2.0-flash
+GROQ_API_KEY=<rotated Groq key>
+GROQ_MODEL=openai/gpt-oss-120b
 ```
 
 For Render, choose a Docker Web Service. The Dockerfile uses the platform's `PORT` value automatically. Configure `/health` as the health-check path when the platform supports it.

@@ -1,7 +1,6 @@
 # filename: app/routes.py
 import math
 import re
-import secrets
 from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, request, jsonify, send_file, abort, redirect, url_for, session
@@ -11,7 +10,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import requests
 
 from app.config import Config
-from app.models import db, User, UserLocation, TariffTable, SubsidyScheme, SolarSolution, SavedComparison
+from app.models import (
+    db, User, UserLocation, TariffTable, SubsidyScheme, SolarSolution, SavedComparison,
+    SolarCompany, QuotationRequest,
+)
 from app.solar_logic import (
     run_full_estimation,
     calculate_co2_avoided_tonnes,
@@ -22,7 +24,9 @@ from app.solar_logic import (
 from app.carbon_calculator import calculate_carbon_impact
 from app.report_generator import generate_pdf_report
 from app.services.solar_assistant import ask_surya
+from app.security import get_csrf_token, regenerate_csrf_token
 from app.services.compare_service import serialize_solution, PRIORITY_LABELS
+from app.services.subsidy_service import calculate_subsidy, central_subsidy, state_subsidy
 
 bp = Blueprint("routes", __name__)
 
@@ -41,15 +45,6 @@ def health():
 def current_user():
     user_id = session.get("user_id")
     return db.session.get(User, user_id) if user_id else None
-
-
-def _csrf_token():
-    session.setdefault("csrf_token", secrets.token_urlsafe(24))
-    return session["csrf_token"]
-
-
-def _csrf_valid():
-    return secrets.compare_digest(request.form.get("csrf_token", ""), session.get("csrf_token", ""))
 
 
 def _safe_next(value):
@@ -115,7 +110,7 @@ def _complete_pending_save(user):
 def account_context():
     return {
         "current_user": current_user(),
-        "csrf_token": _csrf_token(),
+        "csrf_token": get_csrf_token(),
     }
 
 
@@ -178,6 +173,114 @@ def _account_reports():
 
 def _comparison_payload(location, priority="overall"):
     solutions = SolarSolution.query.join(SolarSolution.provider).order_by(SolarSolution.system_size_kw.asc()).all()
+    if not solutions:
+        companies = SolarCompany.query.filter_by(active=True).all()
+        priority_names = ("Tata Power Solar Systems Limited", "Adani Solar")
+        address = (location.address or "").lower()
+        district_aliases = {
+            "modinagar": "ghaziabad",
+            "muradnagar": "ghaziabad",
+        }
+        address_district = next(
+            (district for city, district in district_aliases.items() if city in address),
+            None,
+        )
+        if address_district:
+            address = address + " " + address_district
+
+        def installer_rank(company):
+            district = (company.district or "").lower()
+            exact_match = bool(district and (district in address or address_district and district == address_district))
+            official_brand = company.name in priority_names
+            return (
+                0 if official_brand else (1 if exact_match else 2),
+                0 if exact_match else 1,
+                company.name.lower(),
+            )
+
+        companies.sort(key=installer_rank)
+        exact_or_official = [
+            company for company in companies
+            if company.name in priority_names or (
+                (company.district or "").lower() in address
+            )
+        ]
+        companies = (exact_or_official or companies[:10])[:10]
+        serialized_companies = []
+        try:
+            recommended_kw = float(location.system_size)
+        except (TypeError, ValueError, OverflowError):
+            recommended_kw = 0
+        recommended_kw = recommended_kw if math.isfinite(recommended_kw) else 0
+        recommended_kw = recommended_kw if recommended_kw is not None and recommended_kw >= 0 else 0
+        try:
+            battery_cost = float(location.battery_cost)
+        except (TypeError, ValueError, OverflowError):
+            battery_cost = 0
+        battery_cost = battery_cost if math.isfinite(battery_cost) else 0
+        battery_cost = battery_cost if battery_cost is not None and battery_cost >= 0 else 0
+        estimate_low = round(recommended_kw * Config.SYSTEM_COST_PER_KW_LOW + battery_cost, 0)
+        estimate_high = round(recommended_kw * Config.SYSTEM_COST_PER_KW_HIGH + battery_cost, 0)
+        for rank, company in enumerate(companies, start=1):
+            district = (company.district or "").strip()
+            district_match = bool(district and (
+                district.lower() in address
+                or district.lower().replace(" ", "") in address.replace(" ", "")
+            ))
+            planning_factor = 0.96 + (sum(ord(char) for char in company.name) % 9) / 100
+            planning_min = round(estimate_low * planning_factor, 0)
+            planning_max = round(estimate_high * planning_factor, 0)
+            official_source = company.verification_status == "official-source"
+            serialized_companies.append({
+                "id": company.id,
+                "installer_id": company.id,
+                "provider": company.name,
+                "description": company.description or "UPNEDA approved-firms directory listing.",
+                "system_size_kw": location.system_size,
+                "catalogue_system_size_kw": location.system_size,
+                "panel_brand": None,
+                "panel_model": None,
+                "panel_type": None,
+                "panel_efficiency": None,
+                "number_of_panels": None,
+                "inverter_brand": None,
+                "inverter_model": None,
+                "inverter_type": None,
+                "panel_warranty_years": None,
+                "performance_warranty_years": None,
+                "inverter_warranty_years": None,
+                "installation_included": None,
+                "mounting_included": None,
+                "amc_available": None,
+                "financing_available": None,
+                "price_min": planning_min,
+                "price_max": planning_max,
+                "currency": "INR",
+                "annual_generation": location.annual_generation,
+                "annual_savings": (location.monthly_savings or 0) * 12 if location.monthly_savings is not None else None,
+                "payback_years": None,
+                "data_status": "SOLAR SETU PLANNING ESTIMATE",
+                "source": company.source_url or "UPNEDA Approved Firms Directory",
+                "last_updated": company.last_verified_at.strftime("%B %Y") if company.last_verified_at else "Date unavailable",
+                "availability": "Service area match" if district_match else "Service coverage requires verification",
+                "available": district_match,
+                "match_score": 75 if district_match else 45,
+                "recommendation_rank": rank,
+                "recommendation_reasons": [
+                    "Official national brand profile." if official_source else "Listed in the official UPNEDA approved-firms directory.",
+                    "This price is Solar Setu's planning estimate, not a confirmed vendor quotation.",
+                    "District service availability requires confirmation with the firm.",
+                ],
+                "tradeoffs": [
+                    "Quotation, equipment specifications, warranty details and availability are not verified by Solar Setu."
+                ],
+                "insufficient_data": "Verification pending: service coverage, equipment, warranty and vendor quotation.",
+                "badges": [
+                    "OFFICIAL SOURCE" if official_source else "UPNEDA DIRECTORY LISTED",
+                    "SERVICE AREA MATCH" if district_match else "VERIFY SERVICE COVERAGE",
+                ],
+            })
+        return serialized_companies
     scaled_prices = []
     recommended_kw = location.system_size
     battery_cost = (
@@ -411,6 +514,44 @@ def savings():
     return render_template("savings.html", savings=data, is_guest=not bool(current_user()))
 
 
+@bp.route("/subsidy-guide")
+def subsidy_guide():
+    import json
+    from pathlib import Path
+    config_path = Path(__file__).resolve().parent / "data" / "subsidy_rates.json"
+    with config_path.open("r", encoding="utf-8") as handle:
+        subsidy_config = json.load(handle)
+    table = [
+        {
+            "capacity": capacity,
+            "central": central_subsidy(capacity),
+            "up_additional": state_subsidy("Uttar Pradesh", capacity),
+            "combined": central_subsidy(capacity) + state_subsidy("Uttar Pradesh", capacity),
+        }
+        for capacity in (1, 2, 3, 5)
+    ]
+    return render_template(
+        "subsidy_guide.html",
+        subsidy_config=subsidy_config,
+        subsidy_table=table,
+    )
+
+
+@bp.post("/api/subsidy/calculate")
+def calculate_subsidy_api():
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = calculate_subsidy(
+            payload.get("state"),
+            payload.get("capacity"),
+            payload.get("category"),
+            payload.get("configuration"),
+        )
+        return jsonify({"success": True, "result": result})
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+
 @bp.route("/compare")
 def compare():
     reports = _account_reports()
@@ -428,6 +569,84 @@ def compare():
         priority = "overall"
     solutions = _comparison_payload(selected, priority) if selected else []
     return render_template("compare.html", location=selected, solutions=solutions, priority=priority, priority_labels=PRIORITY_LABELS)
+
+
+@bp.get("/installers")
+def installers():
+    search = clean_text = (request.args.get("q") or "").strip()
+    district = (request.args.get("district") or "").strip()
+    verification = (request.args.get("verification") or "").strip()
+    query = SolarCompany.query.filter_by(active=True)
+    if search:
+        query = query.filter(SolarCompany.name.ilike(f"%{search}%"))
+    if district and district.lower() != "all":
+        query = query.filter(SolarCompany.district.ilike(f"%{district}%"))
+    if verification and verification.lower() != "all":
+        query = query.filter(SolarCompany.verification_status == verification)
+    companies = query.order_by(SolarCompany.district.asc(), SolarCompany.name.asc()).limit(200).all()
+    districts = [row[0] for row in db.session.query(SolarCompany.district).filter(
+        SolarCompany.active.is_(True), SolarCompany.district.isnot(None)
+    ).distinct().order_by(SolarCompany.district.asc()).all()]
+    return render_template("installers.html", companies=companies, districts=districts, search=search,
+                           selected_district=district, selected_verification=verification)
+
+
+@bp.get("/installers/<int:company_id>")
+def installer_detail(company_id):
+    company = SolarCompany.query.filter_by(id=company_id, active=True).first_or_404()
+    location = None
+    location_id = request.args.get("location_id", type=int)
+    if location_id:
+        location = db.session.get(UserLocation, location_id)
+        if location:
+            _authorized_location(location)
+    return render_template("installer_detail.html", company=company, location=location)
+
+
+def _normalize_indian_mobile(value):
+    digits = re.sub(r"\D", "", value or "")
+    if digits.startswith("91") and len(digits) == 12:
+        digits = digits[2:]
+    return digits if len(digits) == 10 and digits[0] in "6789" else None
+
+
+@bp.post("/installers/<int:company_id>/quotation")
+def request_quotation(company_id):
+    company = SolarCompany.query.filter_by(id=company_id, active=True).first_or_404()
+    payload = request.form
+    customer_name = (payload.get("customer_name") or "").strip()
+    mobile = _normalize_indian_mobile(payload.get("mobile"))
+    email = (payload.get("email") or "").strip()
+    address = (payload.get("installation_address") or "").strip()
+    if len(customer_name) < 2:
+        return render_template("installer_detail.html", company=company, quotation_error="Enter your full name.", quotation=True), 400
+    if not mobile:
+        return render_template("installer_detail.html", company=company, quotation_error="Enter a valid 10-digit Indian mobile number.", quotation=True), 400
+    if len(address) < 10:
+        return render_template("installer_detail.html", company=company, quotation_error="Enter the complete installation address.", quotation=True), 400
+    try:
+        system_size = float(payload.get("system_size_kw") or 0) or None
+        monthly_bill = float(payload.get("monthly_bill") or 0) or None
+    except ValueError:
+        return render_template("installer_detail.html", company=company, quotation_error="System size and monthly bill must be valid numbers.", quotation=True), 400
+    if system_size is not None and system_size <= 0:
+        return render_template("installer_detail.html", company=company, quotation_error="System size must be greater than zero.", quotation=True), 400
+    lead = QuotationRequest(
+        company_id=company.id,
+        customer_name=customer_name,
+        mobile=mobile,
+        email=email or None,
+        installation_address=address,
+        district=(payload.get("district") or company.district or "").strip() or None,
+        system_size_kw=system_size,
+        battery_required=(payload.get("battery_required") == "yes"),
+        monthly_bill=monthly_bill,
+        preferred_timeline=(payload.get("preferred_timeline") or "").strip() or None,
+    )
+    db.session.add(lead)
+    db.session.commit()
+    return render_template("installer_detail.html", company=company, quotation_success=True,
+                           quotation_reference=f"SS-Q{lead.id:06d}")
 
 
 @bp.post("/api/comparisons")
@@ -467,8 +686,6 @@ def settings():
     stored = dict((user.settings if user else session.get("solar_preferences")) or {})
     message = None
     if request.method == "POST":
-        if not _csrf_valid():
-            abort(400)
         stored = {
             "property_type": request.form.get("property_type", "residential"),
             "orientation": request.form.get("orientation", "auto"),
@@ -495,35 +712,32 @@ def signup():
     next_url = _safe_next(request.args.get("next") or request.form.get("next"))
     error = None
     if request.method == "POST":
-        if not _csrf_valid():
-            error = "Your session expired. Refresh and try again."
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm = request.form.get("confirm_password", "")
+        if len(name) < 2 or len(name) > 120:
+            error = "Enter your full name."
+        elif not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+            error = "Enter a valid email address."
+        elif len(password) < 8:
+            error = "Password must be at least 8 characters."
+        elif password != confirm:
+            error = "Passwords do not match."
+        elif User.query.filter_by(email=email).first():
+            error = "An account with this email already exists. Try logging in."
         else:
-            name = request.form.get("name", "").strip()
-            email = request.form.get("email", "").strip().lower()
-            password = request.form.get("password", "")
-            confirm = request.form.get("confirm_password", "")
-            if len(name) < 2 or len(name) > 120:
-                error = "Enter your full name."
-            elif not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
-                error = "Enter a valid email address."
-            elif len(password) < 8:
-                error = "Password must be at least 8 characters."
-            elif password != confirm:
-                error = "Passwords do not match."
-            elif User.query.filter_by(email=email).first():
-                error = "An account with this email already exists. Try logging in."
-            else:
-                pending_id = session.get("pending_save_location_id")
-                user = User(name=name, email=email, password_hash=generate_password_hash(password))
-                db.session.add(user)
-                db.session.commit()
-                session.clear()
-                session["user_id"] = user.id
-                session["csrf_token"] = secrets.token_urlsafe(24)
-                if pending_id:
-                    session["pending_save_location_id"] = pending_id
-                saved_id = _complete_pending_save(user)
-                return redirect(url_for("routes.report", location_id=saved_id) if saved_id else (next_url or url_for("routes.profile")))
+            pending_id = session.get("pending_save_location_id")
+            user = User(name=name, email=email, password_hash=generate_password_hash(password))
+            db.session.add(user)
+            db.session.commit()
+            session.clear()
+            session["user_id"] = user.id
+            regenerate_csrf_token()
+            if pending_id:
+                session["pending_save_location_id"] = pending_id
+            saved_id = _complete_pending_save(user)
+            return redirect(url_for("routes.report", location_id=saved_id) if saved_id else (next_url or url_for("routes.profile")))
     return render_template("auth.html", mode="signup", error=error, next_url=next_url)
 
 
@@ -534,38 +748,31 @@ def login():
     next_url = _safe_next(request.args.get("next") or request.form.get("next"))
     error = None
     if request.method == "POST":
-        if not _csrf_valid():
-            error = "Your session expired. Refresh and try again."
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        user = User.query.filter_by(email=email).first()
+        if not user or not check_password_hash(user.password_hash, password):
+            error = "Email or password is incorrect."
         else:
-            email = request.form.get("email", "").strip().lower()
-            password = request.form.get("password", "")
-            user = User.query.filter_by(email=email).first()
-            if not user or not check_password_hash(user.password_hash, password):
-                error = "Email or password is incorrect."
-            else:
-                pending_id = session.get("pending_save_location_id")
-                session.clear()
-                session["user_id"] = user.id
-                session["csrf_token"] = secrets.token_urlsafe(24)
-                if pending_id:
-                    session["pending_save_location_id"] = pending_id
-                saved_id = _complete_pending_save(user)
-                return redirect(url_for("routes.report", location_id=saved_id) if saved_id else (next_url or url_for("routes.dashboard")))
+            pending_id = session.get("pending_save_location_id")
+            session.clear()
+            session["user_id"] = user.id
+            regenerate_csrf_token()
+            if pending_id:
+                session["pending_save_location_id"] = pending_id
+            saved_id = _complete_pending_save(user)
+            return redirect(url_for("routes.report", location_id=saved_id) if saved_id else (next_url or url_for("routes.dashboard")))
     return render_template("auth.html", mode="login", error=error, next_url=next_url)
 
 
 @bp.post("/logout")
 def logout():
-    if not _csrf_valid():
-        abort(400)
     session.clear()
     return redirect(url_for("routes.index"))
 
 
 @bp.post("/report/<int:location_id>/save")
 def save_report(location_id):
-    if not _csrf_valid():
-        abort(400)
     location = UserLocation.query.get_or_404(location_id)
     user = current_user()
     if not user:
@@ -997,6 +1204,9 @@ def api_estimate():
     state = payload.get("state")
     orientation = payload.get("orientation", "auto")
     battery_kwh = _coerce_float(payload.get("battery_kwh"), 0.0)
+    essential_load_kw = _coerce_float(payload.get("essential_load_kw"))
+    backup_hours = _coerce_float(payload.get("backup_hours"))
+    battery_technology = payload.get("battery_technology") or "lfp"
     monthly_bill = _coerce_float(payload.get("monthly_bill"))
     property_type = payload.get("property_type") or "residential"
     needs_backup = bool(payload.get("needs_backup"))
@@ -1037,6 +1247,9 @@ def api_estimate():
             property_type=property_type,
             needs_backup=needs_backup,
             inverter_preference=inverter_preference,
+            essential_load_kw=essential_load_kw,
+            backup_hours=backup_hours,
+            battery_technology=battery_technology,
         )
     except Exception as exc:
         return jsonify({"error": f"Estimation engine failed: {exc}"}), 500
@@ -1094,6 +1307,8 @@ def api_estimate():
                 "performance_ratio": result.get("performance_ratio"),
                 "peak_sun_hours_assumed": result.get("peak_sun_hours_assumed"),
                 "daily_units_per_kw_range": result.get("daily_units_per_kw_range"),
+                "battery_technology": battery_technology,
+                "battery_recommendation": result.get("battery_recommendation"),
                 "dc_note": result.get("dc_note"),
                 "cost_per_kw": result.get("cost_per_kw"),
             },

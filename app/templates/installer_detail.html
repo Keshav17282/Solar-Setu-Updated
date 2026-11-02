@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ company.name }} — Solar Installer{% endblock %}
+{% block content %}
+<section class="compare-heading">
+  <div><span class="eyebrow">{{ company.verification_status|replace('-', ' ')|title }}</span><h1>{{ company.name }}</h1><p>{{ company.description or 'UPNEDA approved-firms directory record.' }}</p></div>
+  <a class="btn btn-secondary" href="{{ url_for('routes.installers') }}">All installers</a>
+</section>
+{% if quotation_success %}
+<div class="settings-success" role="status">Quotation request saved as {{ quotation_reference }}. Solar Setu has not sent your request to the company unless delivery was explicitly confirmed.</div>
+{% endif %}
+<section class="requirement-card">
+  <div><span>Vendor Code</span><strong>{{ company.vendor_code or 'Not listed' }}</strong></div>
+  <div><span>District</span><strong>{{ company.district or 'Not listed' }}</strong></div>
+  <div><span>Status</span><strong>{{ company.verification_status|replace('-', ' ')|title }}</strong></div>
+  <div><span>Official directory</span><strong><a href="{{ company.source_url }}" target="_blank" rel="noopener">UPNEDA source</a></strong></div>
+</section>
+
+<section class="settings-layout">
+  <div class="settings-card">
+    <h2>Company Overview</h2>
+    <p><strong>Address:</strong> {{ company.address or 'Not listed' }}</p>
+    <p>Current PM Surya Ghar vendor status and active service availability require direct verification. This record alone confirms a UPNEDA directory listing only.</p>
+    {% if company.products %}
+    <h3>Verified Products</h3>{% for product in company.products %}<p>{{ product.brand }} {{ product.model }} — {{ product.technology or 'Technology not listed' }}</p>{% endfor %}
+    {% else %}<p>Product brands, specifications and warranties have not been sourced or verified.</p>{% endif %}
+  </div>
+  <aside class="settings-card">
+    <h2>Contact Installer</h2>
+    {% set phone_digits = (company.phone or '')[-10:] %}
+    {% if phone_digits|length == 10 %}<a class="btn-primary" href="tel:+91{{ phone_digits }}">Call Now</a>
+    <a class="btn-secondary" href="https://wa.me/91{{ phone_digits }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    {% if company.email %}<a class="btn-secondary" href="mailto:{{ company.email }}">Email Company</a>{% endif %}
+    {% if company.website %}<a class="btn-secondary" href="{{ company.website }}" target="_blank" rel="noopener">Official Website</a>{% endif %}
+  </aside>
+</section>
+
+<section class="settings-card" id="quotation">
+  <h2>Request a Quotation</h2>
+  {% if quotation_error %}<div class="form-error" role="alert">{{ quotation_error }}</div>{% endif %}
+  <form method="post" action="{{ url_for('routes.request_quotation', company_id=company.id) }}" class="settings-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Customer name<input name="customer_name" required maxlength="160"></label>
+    <label>Mobile number<input name="mobile" required inputmode="tel" pattern="[0-9 +-]{10,14}" placeholder="10-digit Indian mobile number"></label>
+    <label>Email<input name="email" type="email" maxlength="320"></label>
+    <label>Installation address<textarea name="installation_address" required minlength="10"></textarea></label>
+    <label>District<input name="district" value="{{ location.address if location else company.district }}"></label>
+    <label>System size (kW)<input name="system_size_kw" type="number" min="0.1" step="0.1" value="{{ location.system_size if location else '' }}"></label>
+    <label>Battery requirement<select name="battery_required"><option value="no">No</option><option value="yes">Yes</option></select></label>
+    <label>Monthly electricity bill (₹)<input name="monthly_bill" type="number" min="0" step="1"></label>
+    <label>Preferred timeline<select name="preferred_timeline"><option value="">Select</option><option>Within 1 month</option><option>1–3 months</option><option>3–6 months</option><option>Just exploring</option></select></label>
+    <button class="btn-primary" type="submit">Save Quotation Request</button>
+  </form>
+</section>
+{% endblock %}

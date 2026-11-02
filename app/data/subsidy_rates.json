@@ -1,0 +1,36 @@
+{
+  "scheme": {
+    "name": "PM Surya Ghar: Muft Bijli Yojana",
+    "central": {
+      "first_band_kw": 2,
+      "first_band_rate": 30000,
+      "second_band_kw": 1,
+      "second_band_rate": 18000,
+      "maximum": 78000
+    }
+  },
+  "states": {
+    "Uttar Pradesh": {
+      "additional_rate_per_kw": 15000,
+      "maximum": 30000,
+      "availability_status": "verification_required",
+      "display_warning": true
+    }
+  },
+  "state_options": [
+    "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
+    "Bihar", "Chandigarh", "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana",
+    "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala",
+    "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim",
+    "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+  ],
+  "official_links": {
+    "national_portal": "https://pmsuryaghar.gov.in/",
+    "upneda": "https://www.upneda.org.in/",
+    "mnre": "https://mnre.gov.in/",
+    "upneda_booklet": "https://www.upneda.org.in/MediaGallery/MuftBijliYojanBooklet.pdf",
+    "upneda_flyer": "https://www.upneda.org.in/MediaGallery/Documents/PM_Surya_Ghar_Urja_Flyer%2725_Eng.pdf",
+    "mnre_guidelines": "https://mnre.gov.in/notice/operational-guidelines-for-implementation-of-the-component-central-financial-assistance-to-residential-consumers-of-pm-surya-ghar-muft-bijli-yojana/"
+  }
+}

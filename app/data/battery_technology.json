@@ -1,0 +1,23 @@
+{
+  "engineering_assumptions": true,
+  "technologies": {
+    "lfp": {
+      "label": "Lithium iron phosphate (LFP)",
+      "depth_of_discharge": 0.90,
+      "round_trip_efficiency": 0.90,
+      "practical_sizes_kwh": [2, 3, 5, 10, 15, 20]
+    },
+    "nmc": {
+      "label": "Nickel manganese cobalt (NMC)",
+      "depth_of_discharge": 0.85,
+      "round_trip_efficiency": 0.90,
+      "practical_sizes_kwh": [2, 3, 5, 10, 15, 20]
+    },
+    "lead-acid": {
+      "label": "Lead-acid",
+      "depth_of_discharge": 0.50,
+      "round_trip_efficiency": 0.80,
+      "practical_sizes_kwh": [2, 3, 5, 10, 15, 20]
+    }
+  }
+}

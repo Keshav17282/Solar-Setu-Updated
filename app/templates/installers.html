@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Verified Solar Installers — Solar Setu{% endblock %}
+{% block content %}
+<section class="compare-heading">
+  <div>
+    <span class="eyebrow">UPNEDA APPROVED FIRMS DIRECTORY</span>
+    <h1>Find a Solar Installer</h1>
+    <p>Directory listings are not confirmation of current service availability or PM Surya Ghar portal status.</p>
+  </div>
+  {% if location %}<a class="btn btn-secondary" href="{{ url_for('routes.compare') }}">Back to comparison</a>{% endif %}
+</section>
+
+<form method="get" class="compare-controls" aria-label="Installer filters">
+  <div class="filter-control"><label for="installer-search">Company name</label><input id="installer-search" name="q" value="{{ search }}" placeholder="Search installer"></div>
+  <div class="filter-control"><label for="district-filter">District</label><select id="district-filter" name="district"><option value="all">All districts</option>{% for district in districts %}<option value="{{ district }}" {% if selected_district == district %}selected{% endif %}>{{ district }}</option>{% endfor %}</select></div>
+  <div class="filter-control"><label for="verification-filter">Verification</label><select id="verification-filter" name="verification"><option value="all">All statuses</option><option value="verified" {% if selected_verification == 'verified' %}selected{% endif %}>Verified</option><option value="directory-listed" {% if selected_verification == 'directory-listed' %}selected{% endif %}>UPNEDA directory listed</option><option value="unverified" {% if selected_verification == 'unverified' %}selected{% endif %}>Unverified</option></select></div>
+  <button class="btn-primary" type="submit">Search</button>
+</form>
+
+<section class="compare-results">
+  <div class="results-heading"><div><span class="compare-kicker">INSTALLER DIRECTORY</span><h2>{{ companies|length }} installers</h2></div></div>
+  {% if companies %}
+  <div class="solution-grid">
+    {% for company in companies %}
+    <article class="solution-card">
+      <div class="solution-top"><span class="solution-provider">{{ company.name }}</span><span class="compare-badge">{{ company.verification_status|replace('-', ' ')|title }}</span></div>
+      <p>{{ company.address or 'Address not listed' }}</p>
+      <div class="solution-facts">
+        <div><span>District</span><strong>{{ company.district or 'Not listed' }}</strong></div>
+        <div><span>Vendor code</span><strong>{{ company.vendor_code or 'Not listed' }}</strong></div>
+        <div><span>Phone</span><strong>{{ company.phone or 'Not listed' }}</strong></div>
+        <div><span>Email</span><strong>{{ company.email or 'Not listed' }}</strong></div>
+      </div>
+      <div class="solution-actions"><a class="btn-details" href="{{ url_for('routes.installer_detail', company_id=company.id) }}">View Details</a>{% if company.phone %}<a class="btn-details" href="tel:+91{{ company.phone[-10:] }}">Call Now</a>{% endif %}</div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="no-matches"><h3>No suitable installer found.</h3><p>Try another district or company name. Service availability must be confirmed directly with the installer.</p></div>
+  {% endif %}
+</section>
+{% endblock %}
