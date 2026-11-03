@@ -13,7 +13,7 @@ from sqlalchemy import inspect, text
 from flask_migrate import stamp, upgrade
 
 from app import create_app
-from app.models import db
+from app.models import db, seed_application_reference_data
 
 
 REQUIRED_TABLES = {
@@ -72,10 +72,26 @@ def main():
             raise SystemExit(
                 f"Database migration verification failed. Missing tables: {', '.join(missing)}"
             )
+        seed_application_reference_data()
         print(f"Database migration verified: {database_label(database_url)}")
         print(f"Verified application tables: {len(REQUIRED_TABLES)}")
-    return 0
+
+    port = os.environ.get("PORT", "5000").strip() or "5000"
+    gunicorn_args = [
+        "gunicorn",
+        "--bind",
+        f"0.0.0.0:{port}",
+        "--workers",
+        "2",
+        "--timeout",
+        "120",
+        "--worker-class",
+        "sync",
+        "wsgi:app",
+    ]
+    print(f"Starting Gunicorn on 0.0.0.0:{port}")
+    os.execvp("gunicorn", gunicorn_args)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

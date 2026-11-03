@@ -422,6 +422,31 @@ def seed_real_installers():
     db.session.commit()
 
 
+def seed_application_reference_data():
+    """Seed reference data once across concurrent Gunicorn worker boot."""
+    from sqlalchemy import text
+
+    bind = db.engine
+    if bind.dialect.name == "postgresql":
+        connection = db.session.connection()
+        connection.execute(text("SELECT pg_advisory_lock(867530912)"))
+        try:
+            seed_solar_solutions()
+            seed_real_installers()
+            seed_reference_data()
+        except Exception:
+            db.session.rollback()
+            raise
+        finally:
+            connection.execute(text("SELECT pg_advisory_unlock(867530912)"))
+            db.session.commit()
+        return
+
+    seed_solar_solutions()
+    seed_real_installers()
+    seed_reference_data()
+
+
 def seed_reference_data():
     """Populate the prototype tariff and subsidy reference data once."""
     if TariffTable.query.count() == 0:

@@ -33,9 +33,8 @@ def create_app(skip_seed=False):
             and marketplace_tables_ready
             and (not app.config.get("DATABASE_URL") or "users" in tables)
         ):
-            seed_solar_solutions()
-            seed_real_installers()
-            seed_reference_data()
+            from app.models import seed_application_reference_data
+            seed_application_reference_data()
 
     from app.routes import bp as routes_bp
     app.register_blueprint(routes_bp)

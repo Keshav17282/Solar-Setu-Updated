@@ -22,4 +22,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 5000
-CMD ["sh", "-c", ": \"${DATABASE_URL:?DATABASE_URL is required in production}\"; : \"${SECRET_KEY:?SECRET_KEY is required in production}\"; python scripts/production_bootstrap.py && gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120 run:app"]
+CMD ["sh", "-c", ": \"${DATABASE_URL:?DATABASE_URL is required in production}\"; : \"${SECRET_KEY:?SECRET_KEY is required in production}\"; exec python scripts/production_bootstrap.py"]
