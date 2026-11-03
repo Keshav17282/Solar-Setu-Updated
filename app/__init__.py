@@ -18,7 +18,21 @@ def create_app(skip_seed=False):
     with app.app_context():
         if not app.config.get("DATABASE_URL"):
             ensure_optional_account_schema()
-        if not skip_seed and (not app.config.get("DATABASE_URL") or inspect(db.engine).has_table("users")):
+        tables = set(inspect(db.engine).get_table_names())
+        marketplace_tables_ready = {
+            "solar_companies",
+            "company_service_areas",
+            "company_products",
+            "company_verifications",
+            "quotation_requests",
+        }.issubset(tables)
+        core_tables_ready = "users" in tables and "user_locations" in tables
+        if (
+            not skip_seed
+            and core_tables_ready
+            and marketplace_tables_ready
+            and (not app.config.get("DATABASE_URL") or "users" in tables)
+        ):
             seed_solar_solutions()
             seed_real_installers()
             seed_reference_data()

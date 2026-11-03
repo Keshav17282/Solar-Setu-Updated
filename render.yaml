@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: solar-setu
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
