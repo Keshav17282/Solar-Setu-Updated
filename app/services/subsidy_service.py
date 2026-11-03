@@ -24,12 +24,42 @@ def detect_state(location_text):
     text = str(location_text or "").strip().lower()
     if not text:
         return None
-    if (
-        re.search(r"\b(uttar\s+pradesh|uttarpradesh|u\.?p\.?|modinagar)\b", text)
-        or text == "up"
-    ):
+    up_aliases = (
+        "uttar pradesh", "uttarpradesh", "u.p", "u.p.", "up,",
+        "modinagar", "lucknow", "kanpur", "agra", "varanasi",
+        "meerut", "ghaziabad", "prayagraj", "allahabad", "noida",
+        "gorakhpur", "bareilly", "aligarh", "moradabad",
+        "saharanpur", "mathura",
+    )
+    if text == "up" or any(alias in text for alias in up_aliases):
         return "Uttar Pradesh"
+    states = _config()["state_options"]
+    for state in states:
+        if state.lower() in text:
+            return state
     return None
+
+
+def normalize_category(category):
+    value = str(category or "").strip().lower().replace("_", "-").replace(" ", "-")
+    if value in ("residential", "home", "household", "remote", "residential-grid-connected"):
+        return "residential"
+    if value in ("commercial", "shop", "office"):
+        return "commercial"
+    if value in ("industrial", "factory"):
+        return "industrial"
+    return value
+
+
+def normalize_configuration(configuration):
+    value = str(configuration or "").strip().lower().replace("_", "-").replace(" ", "-")
+    if value in ("on-grid", "ongrid", "grid-connected", "gridtied", "grid-tied"):
+        return "on-grid"
+    if value in ("hybrid", "battery-hybrid"):
+        return "hybrid"
+    if value in ("off-grid", "offgrid", "remote"):
+        return "off-grid"
+    return value
 
 
 def state_subsidy(state, capacity_kw):
@@ -66,13 +96,21 @@ def calculate_subsidy(state, capacity_kw, category="residential", configuration=
         raise ValueError("System capacity must be greater than 0 and no more than 10 kW.")
 
     config = _config()
-    category = str(category or "").strip().lower()
-    configuration = str(configuration or "").strip().lower()
+    category = normalize_category(category)
+    configuration = normalize_configuration(configuration)
     normalized_state = detect_state(state) if state else None
     normalized_state = normalized_state or str(state or "").strip()
     central = central_subsidy(capacity)
     up_additional = state_subsidy(normalized_state, capacity) if normalized_state == "Uttar Pradesh" else 0.0
     has_grid_connection = grid_connected_from_configuration(configuration, grid_connected, saved_inverter)
+
+    missing = []
+    if not normalized_state:
+        missing.append("state")
+    if not category:
+        missing.append("consumer category")
+    if not configuration:
+        missing.append("system configuration")
 
     eligible = (
         bool(str(state or "").strip())
@@ -80,9 +118,9 @@ def calculate_subsidy(state, capacity_kw, category="residential", configuration=
         and configuration in ("on-grid", "grid-connected", "ongrid", "hybrid")
         and has_grid_connection
     )
-    if not str(state or "").strip() or not category or not configuration:
+    if missing:
         status = "Verify eligibility on the official portal"
-        explanation = "Location, property category and grid configuration are required before subsidy eligibility can be established."
+        explanation = f"Required report input missing: {', '.join(missing)}."
     elif category not in ("residential", "residential grid-connected"):
         status = "Not eligible for residential CFA"
         explanation = "The residential PM Surya Ghar CFA is not intended for commercial or industrial systems. Verify other official schemes separately."
@@ -109,10 +147,10 @@ def calculate_subsidy(state, capacity_kw, category="residential", configuration=
         "eligible": eligible,
         "eligibility_status": status,
         "explanation": explanation,
-        "up_warning": state == "Uttar Pradesh",
+        "up_warning": normalized_state == "Uttar Pradesh",
         "warning": (
             "Additional Uttar Pradesh subsidy — subject to current scheme availability, eligibility, allocation and official verification."
-            if state == "Uttar Pradesh" else
+            if normalized_state == "Uttar Pradesh" else
             "State benefits are not included unless officially verified for this Solar Setu guide. Verify separately with your state authority."
         )
     }
@@ -122,8 +160,21 @@ def enrich_saved_report_financials(report_data):
     """Recalculate persisted subsidy-dependent report totals from saved inputs."""
     data = dict(report_data or {})
     extras = data.get("extras") or {}
-    category = extras.get("property_type") or data.get("property_type")
-    configuration = extras.get("inverter_type") or data.get("inverter_type")
+    category = (
+        extras.get("consumer_category")
+        or extras.get("property_type")
+        or data.get("consumer_category")
+        or data.get("property_type")
+    )
+    configuration = (
+        extras.get("system_configuration")
+        or extras.get("inverter_type")
+        or data.get("system_configuration")
+        or data.get("inverter_type")
+    )
+    grid_connected = extras.get("grid_connected")
+    if grid_connected is None:
+        grid_connected = data.get("grid_connected")
     inverter = extras.get("inverter") or data.get("inverter")
     saved_inverter_text = " ".join(str(value) for value in (
         inverter.get("type") if isinstance(inverter, dict) else inverter,
@@ -133,10 +184,11 @@ def enrich_saved_report_financials(report_data):
 
     try:
         result = calculate_subsidy(
-            data.get("address"),
+            extras.get("state") or data.get("state") or data.get("address"),
             data.get("system_size"),
             category or "residential",
             configuration or "on-grid",
+            grid_connected=grid_connected,
             saved_inverter=saved_inverter_text,
         )
     except ValueError:

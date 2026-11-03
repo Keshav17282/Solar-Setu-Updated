@@ -247,6 +247,9 @@ function initEstimationButton() {
           battery_technology: batteryTechnology,
           monthly_bill: monthlyBill,
           property_type: propertyType,
+          state: selectedAddress,
+          system_configuration: inverterPreference === 'auto' ? null : inverterPreference,
+          grid_connected: inverterPreference === 'off-grid' ? false : null,
           needs_backup: needsBackup || batteryEnabled,
           inverter_preference: inverterPreference
         })

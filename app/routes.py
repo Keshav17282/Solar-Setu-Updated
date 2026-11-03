@@ -543,9 +543,10 @@ def calculate_subsidy_api():
     try:
         result = calculate_subsidy(
             payload.get("state"),
-            payload.get("capacity"),
+            payload.get("capacity_kw", payload.get("capacity")),
             payload.get("category"),
             payload.get("configuration"),
+            grid_connected=payload.get("grid_connected"),
         )
         return jsonify({"success": True, "result": result})
     except ValueError as exc:
@@ -811,7 +812,8 @@ def report(location_id):
         "sizing_method", "rule_of_thumb_monthly_units", "rule_of_thumb_annual_units",
         "property_type", "needs_backup", "planning_notes", "system_cost_low",
         "system_cost_high", "annual_om", "performance_ratio", "peak_sun_hours_assumed",
-        "daily_units_per_kw_range", "dc_note", "cost_per_kw",
+        "daily_units_per_kw_range", "dc_note", "cost_per_kw", "state", "district",
+        "location", "system_configuration", "grid_connected", "consumer_category",
     ):
         if key in extras and extras[key] is not None:
             loc_dict[key] = extras[key]
@@ -1209,6 +1211,11 @@ def api_estimate():
     battery_technology = payload.get("battery_technology") or "lfp"
     monthly_bill = _coerce_float(payload.get("monthly_bill"))
     property_type = payload.get("property_type") or "residential"
+    state = payload.get("state")
+    system_configuration = payload.get("system_configuration") or payload.get("configuration")
+    grid_connected = payload.get("grid_connected")
+    if grid_connected is None and inverter_preference != "auto":
+        grid_connected = inverter_preference != "off-grid"
     needs_backup = bool(payload.get("needs_backup"))
     inverter_preference = payload.get("inverter_preference") or "auto"
 
@@ -1299,6 +1306,12 @@ def api_estimate():
                 "rule_of_thumb_monthly_units": result.get("rule_of_thumb_monthly_units"),
                 "rule_of_thumb_annual_units": result.get("rule_of_thumb_annual_units"),
                 "property_type": result.get("property_type"),
+                "state": state,
+                "district": payload.get("district"),
+                "location": address,
+                "system_configuration": system_configuration or result.get("inverter_type"),
+                "grid_connected": grid_connected,
+                "consumer_category": property_type,
                 "needs_backup": result.get("needs_backup"),
                 "planning_notes": result.get("planning_notes"),
                 "system_cost_low": result.get("system_cost_low"),

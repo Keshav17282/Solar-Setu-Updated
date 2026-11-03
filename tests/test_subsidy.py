@@ -1,6 +1,11 @@
 import pytest
 
-from app.services.subsidy_service import calculate_subsidy, central_subsidy, state_subsidy
+from app.services.subsidy_service import (
+    calculate_subsidy,
+    central_subsidy,
+    enrich_saved_report_financials,
+    state_subsidy,
+)
 
 
 @pytest.mark.parametrize(("capacity", "expected"), [
@@ -98,3 +103,54 @@ def test_missing_location_category_or_configuration_requires_verification():
             "Not eligible for residential CFA",
         )
         assert result["final_estimated_subsidy"] == 0
+
+
+@pytest.mark.parametrize(("capacity", "central", "state", "combined"), [
+    (1, 30000, 15000, 45000),
+    (2, 60000, 30000, 90000),
+    (3, 78000, 30000, 108000),
+    (3.9, 78000, 30000, 108000),
+    (5, 78000, 30000, 108000),
+])
+def test_up_capacity_subsidy_matrix(capacity, central, state, combined):
+    result = calculate_subsidy(
+        "Lucknow, Uttar Pradesh", capacity, "residential", "on-grid"
+    )
+    assert result["central_subsidy"] == central
+    assert result["state_additional_subsidy"] == state
+    assert result["final_estimated_subsidy"] == combined
+
+
+@pytest.mark.parametrize("category", ["commercial", "industrial"])
+def test_non_residential_categories_get_no_cfa(category):
+    result = calculate_subsidy("Uttar Pradesh", 3, category, "on-grid")
+    assert result["eligible"] is False
+    assert result["final_estimated_subsidy"] == 0
+
+
+def test_saved_report_explicit_values_are_separate_from_battery():
+    report = enrich_saved_report_financials({
+        "address": "Lucknow, Uttar Pradesh",
+        "system_size": 3.9,
+        "system_cost": 250000,
+        "battery_kwh": 8,
+        "battery_cost": 40000,
+        "monthly_savings": 5000,
+        "extras": {
+            "consumer_category": "residential",
+            "system_configuration": "on-grid",
+            "grid_connected": True,
+            "state": "Uttar Pradesh",
+        },
+    })
+    assert report["central_subsidy_amount"] == 78000
+    assert report["state_subsidy_amount"] == 30000
+    assert report["total_estimated_subsidy"] == 108000
+    assert report["net_investment"] == 182000
+
+
+def test_missing_saved_report_fields_name_exact_input():
+    result = calculate_subsidy(None, 3, None, None)
+    assert "state" in result["explanation"]
+    assert "consumer category" in result["explanation"]
+    assert "system configuration" in result["explanation"]
