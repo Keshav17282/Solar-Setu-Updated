@@ -49,6 +49,35 @@ class StartupDatabaseTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), {"status": "ok"})
 
+    def test_estimate_payload_initializes_inverter_before_grid_status(self):
+        app = create_app(skip_seed=True)
+        self.app = app
+        app.config.update(TESTING=True, SECRET_KEY="startup-test-secret")
+
+        with app.app_context():
+            db.create_all()
+
+        response = app.test_client().post(
+            "/api/estimate",
+            json={
+                "address": "Lucknow, Uttar Pradesh",
+                "latitude": 26.8467,
+                "longitude": 80.9462,
+                "polygon": [
+                    [26.8467, 80.9462],
+                    [26.8470, 80.9462],
+                    [26.8470, 80.9465],
+                ],
+                "battery_kwh": 0,
+                "property_type": "residential",
+                "state": "Uttar Pradesh",
+                "system_configuration": "on-grid",
+                "inverter_preference": "on-grid",
+            },
+        )
+
+        self.assertIn(response.status_code, (200, 400))
+
     def test_repeated_reference_data_seeding_is_idempotent(self):
         app = create_app(skip_seed=True)
         self.app = app

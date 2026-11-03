@@ -1213,11 +1213,11 @@ def api_estimate():
     property_type = payload.get("property_type") or "residential"
     state = payload.get("state")
     system_configuration = payload.get("system_configuration") or payload.get("configuration")
+    inverter_preference = payload.get("inverter_preference") or "auto"
     grid_connected = payload.get("grid_connected")
     if grid_connected is None and inverter_preference != "auto":
         grid_connected = inverter_preference != "off-grid"
     needs_backup = bool(payload.get("needs_backup"))
-    inverter_preference = payload.get("inverter_preference") or "auto"
 
     if latitude is None or longitude is None:
         return jsonify({"error": "latitude and longitude are required"}), 400
