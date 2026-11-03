@@ -39,20 +39,19 @@ def database_label(database_url):
 
 def stamp_legacy_schema(app, db, directory):
     """Mark an already-created Solar Setu schema at 0001 without changing it."""
-    with app.app_context():
-        table_names = set(inspect(db.engine).get_table_names())
-        if "users" not in table_names or "user_locations" not in table_names:
+    table_names = set(inspect(db.engine).get_table_names())
+    if "users" not in table_names or "user_locations" not in table_names:
+        return False
+
+    if "alembic_version" in table_names:
+        with db.engine.connect() as connection:
+            versions = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+        if versions:
             return False
 
-        if "alembic_version" in table_names:
-            with db.engine.connect() as connection:
-                versions = connection.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-            if versions:
-                return False
-
-        stamp(directory=directory, revision="0001_initial_schema")
-        print("Preserved existing application tables; stamped legacy schema at 0001_initial_schema.")
-        return True
+    stamp(directory=directory, revision="0001_initial_schema")
+    print("Preserved existing application tables; stamped legacy schema at 0001_initial_schema.")
+    return True
 
 
 def main():
